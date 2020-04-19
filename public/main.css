@@ -1,0 +1,54 @@
+table:not(.horizontal) {
+	max-height: none;
+}
+
+body.crypto .generateKey {
+	display: inline-block;
+}
+
+.generateKey {
+	display: none;
+}
+
+form.inline {
+	display: inline-block;
+	padding: 0;
+	margin: 0;
+	background: none;
+	border: none;
+}
+
+.authKey{
+	max-width: 190px;
+}
+
+td[data-label='Auth']{
+	white-space: nowrap;
+}
+
+.inputAddon{
+	margin-left: calc(-0.5*var(--universal-padding) - 1px);
+	border-radius: 0 var(--universal-border-radius) var(--universal-border-radius) 0;
+}
+
+h1 a{
+	color: var(--fore-color) !important;
+}
+
+@media (min-width: 768px) {
+	td[data-label='Name'], td[data-label='Expire']{
+		line-height: 3.5rem;
+		font-size: calc(1rem * var(--heading-ratio));
+	}
+}
+
+@media (min-width: 1024px) {
+	h1{
+		margin-top: 4rem;
+	}
+	.container{
+		min-width: 1000px;
+		max-width: 1400px;
+		width: 70%;
+	}
+}
