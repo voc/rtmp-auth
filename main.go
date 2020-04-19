@@ -15,7 +15,6 @@ import (
     "os/signal"
 
     "github.com/gorilla/mux"
-    "github.com/gorilla/schema"
     "github.com/gorilla/csrf"
     "github.com/rakyll/statik/fs"
 
@@ -77,7 +76,6 @@ func ParseExpiry(str string) *int64 {
     return &expiry
 }
 
-var decoder = schema.NewDecoder()
 var templates = template.Must(template.ParseGlob("templates/*"))
 
 func PublishHandler(store *Store) handleFunc {

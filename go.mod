@@ -11,6 +11,5 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/csrf v1.6.2
 	github.com/gorilla/mux v1.7.4
-	github.com/gorilla/schema v1.1.0
 	github.com/rakyll/statik v0.1.7
 )
