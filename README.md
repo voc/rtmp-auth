@@ -34,6 +34,10 @@ Now all rtmp-publish requests for that application will be authenticated against
 
 You can visit localhost:8082 to add streams.
 
+## Dependencies
+  * protoc with go-support
+  * statik ```go get github.com/rakyll/statik```
+
 ## Build
 ```
 make

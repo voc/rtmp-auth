@@ -4,18 +4,18 @@ import (
     "context"
     "flag"
     "fmt"
-    "html/template"
+    // "html/template"
     "log"
-    "time"
-    "regexp"
-    "strings"
-    "strconv"
     "net/http"
     "os"
     "os/signal"
+    "regexp"
+    "strconv"
+    "strings"
+    "time"
 
-    "github.com/gorilla/mux"
     "github.com/gorilla/csrf"
+    "github.com/gorilla/mux"
     "github.com/rakyll/statik/fs"
 
     "github.com/voc/rtmp-auth/storage"
@@ -23,12 +23,6 @@ import (
 )
 
 type handleFunc func(http.ResponseWriter, *http.Request)
-
-type TemplateData struct{
-    Store Store
-    CsrfTemplate template.HTML
-    Errors []error
-}
 
 var durationRegex = regexp.MustCompile(`P([\d\.]+Y)?([\d\.]+M)?([\d\.]+D)?T?([\d\.]+H)?([\d\.]+M)?([\d\.]+?S)?`)
 
@@ -75,8 +69,6 @@ func ParseExpiry(str string) *int64 {
     expiry := t.Unix()
     return &expiry
 }
-
-var templates = template.Must(template.ParseGlob("templates/*"))
 
 func PublishHandler(store *Store) handleFunc {
     return func(w http.ResponseWriter, r *http.Request) {

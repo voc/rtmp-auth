@@ -1,4 +1,17 @@
-<!DOCTYPE html>
+package main
+
+import (
+  "html/template"
+)
+
+type TemplateData struct{
+    Store Store
+    CsrfTemplate template.HTML
+    Errors []error
+}
+
+var templates = template.Must(template.New("form.html").Parse(
+`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -100,4 +113,4 @@
   </div>
 <script src="/public/main.js"></script>
 </body>
-</html>
+</html>`))
