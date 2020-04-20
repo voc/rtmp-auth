@@ -203,7 +203,7 @@ func main() {
         log.Fatal(err)
     }
 
-    CSRF := csrf.Protect([]byte("32-byte-long-auth-key"), csrf.Secure(!*insecure))
+    CSRF := csrf.Protect(store.State.Secret, csrf.Secure(!*insecure))
 
     api := mux.NewRouter()
     api.Path("/publish").Methods("POST").HandlerFunc(PublishHandler(store));

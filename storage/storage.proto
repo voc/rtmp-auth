@@ -3,6 +3,7 @@ package storage;
 
 message State {
     repeated Stream streams = 1;
+    bytes secret = 2;
 }
 
 message Stream {

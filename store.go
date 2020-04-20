@@ -1,9 +1,11 @@
 package main
 
 import (
+	// "bytes"
 	"os"
 	"fmt"
 	"log"
+	"math/rand"
 	"time"
 	"sync"
 	"io/ioutil"
@@ -25,6 +27,13 @@ func NewStore(path string, apps []string) (*Store, error) {
 	if err := store.read(); err != nil {
 			return nil, err
 	}
+
+	if len(store.State.Secret) == 0 {
+		store.State.Secret = make([]byte, 32)
+		rand.Read(store.State.Secret)
+		store.save()
+	}
+
 
 	return store, nil
 }
