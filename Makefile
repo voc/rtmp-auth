@@ -30,12 +30,3 @@ clean:
 
 all: build
 .PHONY: all
-
-#test:
-#	$(GOTEST) -v ./...
-#run:
-#	$(GOBUILD) -o $(BINARY_NAME) -v ./...
-#	./$(BINARY_NAME)
-#deps:
-#	$(GOGET) github.com/markbates/goth
-#	$(GOGET) github.com/markbates/pop

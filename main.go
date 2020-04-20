@@ -4,7 +4,6 @@ import (
     "context"
     "flag"
     "fmt"
-    // "html/template"
     "log"
     "net/http"
     "os"
@@ -191,6 +190,7 @@ func main() {
     var apps = flag.String("app", "stream", "Comma separated list of RTMP applications")
     var apiAddr = flag.String("apiAddr", "localhost:8080", "API bind address")
     var frontendAddr = flag.String("frontendAddr", "localhost:8082", "Frontend bind address")
+    var insecure = flag.Bool("insecure", false, "Set to allow non-secure CSRF cookie")
     flag.Parse()
 
     store, err := NewStore(*path, strings.Split(*apps, ","))
@@ -203,7 +203,7 @@ func main() {
         log.Fatal(err)
     }
 
-    CSRF := csrf.Protect([]byte("32-byte-long-auth-key"))
+    CSRF := csrf.Protect([]byte("32-byte-long-auth-key"), csrf.Secure(!*insecure))
 
     api := mux.NewRouter()
     api.Path("/publish").Methods("POST").HandlerFunc(PublishHandler(store));

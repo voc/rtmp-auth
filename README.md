@@ -30,6 +30,8 @@ Then start the daemon
 ./rtmp-auth -app "myrtmp" -apiAddr "localhost:8000" -frontendAddr "localhost:8082"
 ```
 
+You will need to set the -insecure flag when testing over http.
+
 Now all rtmp-publish requests for that application will be authenticated against the daemon.
 
 You can visit localhost:8082 to add streams.
