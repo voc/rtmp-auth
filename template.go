@@ -1,17 +1,17 @@
 package main
 
 import (
-  "html/template"
+	"html/template"
 )
 
-type TemplateData struct{
-    Store Store
-    CsrfTemplate template.HTML
-    Errors []error
+type TemplateData struct {
+	Store        Store
+	CsrfTemplate template.HTML
+	Errors       []error
 }
 
 var templates = template.Must(template.New("form.html").Parse(
-`<!DOCTYPE html>
+	`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
