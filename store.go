@@ -19,11 +19,12 @@ type Store struct {
 	State        storage.State
 	Applications []string
 	Path         string
+	Prefix       string
 	sync.RWMutex
 }
 
-func NewStore(path string, apps []string) (*Store, error) {
-	store := &Store{Path: path, Applications: apps}
+func NewStore(path string, apps []string, prefix string) (*Store, error) {
+	store := &Store{Path: path, Applications: apps, Prefix: prefix}
 	if err := store.read(); err != nil {
 		return nil, err
 	}

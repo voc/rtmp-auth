@@ -192,9 +192,10 @@ func main() {
 	var apiAddr = flag.String("apiAddr", "localhost:8080", "API bind address")
 	var frontendAddr = flag.String("frontendAddr", "localhost:8082", "Frontend bind address")
 	var insecure = flag.Bool("insecure", false, "Set to allow non-secure CSRF cookie")
+	var prefix = flag.String("subpath", "", "Set to allow running behind reverse-proxy at that subpath")
 	flag.Parse()
 
-	store, err := NewStore(*path, strings.Split(*apps, ","))
+	store, err := NewStore(*path, strings.Split(*apps, ","), *prefix)
 	if err != nil {
 		log.Fatal("noo", err)
 	}
@@ -211,11 +212,12 @@ func main() {
 	api.Path("/unpublish").Methods("POST").HandlerFunc(UnpublishHandler(store))
 
 	frontend := mux.NewRouter()
-	frontend.Path("/").Methods("GET").HandlerFunc(FormHandler(store))
-	frontend.Path("/add").Methods("POST").HandlerFunc(AddHandler(store))
-	frontend.Path("/remove").Methods("POST").HandlerFunc(RemoveHandler(store))
-	frontend.PathPrefix("/public/").Handler(
-		http.StripPrefix("/public/", http.FileServer(statikFS)))
+	sub := frontend.PathPrefix(*prefix).Subrouter()
+	sub.Path("/").Methods("GET").HandlerFunc(FormHandler(store))
+	sub.Path("/add").Methods("POST").HandlerFunc(AddHandler(store))
+	sub.Path("/remove").Methods("POST").HandlerFunc(RemoveHandler(store))
+	sub.PathPrefix("/public/").Handler(
+		http.StripPrefix(*prefix+"/public/", http.FileServer(statikFS)))
 
 	apiServer := &http.Server{
 		Handler:      api,

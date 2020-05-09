@@ -16,8 +16,8 @@ var templates = template.Must(template.New("form.html").Parse(
 <head>
   <meta charset="UTF-8">
   <title>RTMP Admin</title>
-  <link rel="stylesheet" type="text/css" href="/public/mini-dark.css">
-  <link rel="stylesheet" type="text/css" href="/public/main.css">
+  <link rel="stylesheet" type="text/css" href="{{.Store.Prefix}}/public/mini-dark.css">
+  <link rel="stylesheet" type="text/css" href="{{.Store.Prefix}}/public/main.css">
 </head>
 <body>
   <div class="container">
@@ -62,7 +62,7 @@ var templates = template.Must(template.New("form.html").Parse(
             {{end}}
           </td>
           <td style="text-align:right;">
-            <form class="inline" action="/remove" method="POST">
+            <form class="inline" action="{{$.Store.Prefix}}/remove" method="POST">
               {{ $.CsrfTemplate }}
               <input type="hidden" name="id" value="{{.Id}}">
               <button class="secondary">Remove</button>
@@ -74,7 +74,7 @@ var templates = template.Must(template.New("form.html").Parse(
     </table>
 
     <h2>Add Stream</h2>
-    <form action="/add" method="POST" novalidate>
+    <form action="{{$.Store.Prefix}}/add" method="POST" novalidate>
       <div class="row">
         <div class="col-sm-12 col-md-6">
           <label for="application">Application</label>
@@ -111,6 +111,6 @@ var templates = template.Must(template.New("form.html").Parse(
       </div>
     </form>
   </div>
-<script src="/public/main.js"></script>
+<script src="{{.Store.Prefix}}/public/main.js"></script>
 </body>
 </html>`))
