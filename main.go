@@ -147,6 +147,7 @@ func AddHandler(store *Store) handleFunc {
 				Application: r.PostFormValue("application"),
 				AuthKey:     r.PostFormValue("auth_key"),
 				AuthExpire:  *expiry,
+				Notes:       r.PostFormValue("notes"),
 			}
 
 			store.AddStream(stream)

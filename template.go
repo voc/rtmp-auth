@@ -40,6 +40,7 @@ var templates = template.Must(template.New("form.html").Parse(
         <th>Name</th>
         <th>Auth</th>
         <th>Expires</th>
+		<th>Notes</th>
         <th></th>
       </thead>
       <tbody>
@@ -61,6 +62,7 @@ var templates = template.Must(template.New("form.html").Parse(
               {{.AuthExpire}}
             {{end}}
           </td>
+          <td style="text-align:right;">{{.Notes}}</td>
           <td style="text-align:right;">
             <form class="inline" action="{{$.Store.Prefix}}/remove" method="POST">
               {{ $.CsrfTemplate }}
@@ -102,6 +104,11 @@ var templates = template.Must(template.New("form.html").Parse(
             </span>
           </label>
           <input type="text" id="authExpire" name="auth_expire" placeholder="never">
+        </div>
+
+        <div class="col-sm-12 col-md-6">
+          <label for="authKey">Notes</label>
+          <input type="text" id="notes" name="notes" placeholder="optional notes">
         </div>
       </div>
 
