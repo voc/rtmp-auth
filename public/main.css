@@ -1,13 +1,6 @@
+/* generic styles */
 table:not(.horizontal) {
 	max-height: none;
-}
-
-body.crypto .generateKey {
-	display: inline-block;
-}
-
-.generateKey {
-	display: none;
 }
 
 form.inline {
@@ -18,12 +11,17 @@ form.inline {
 	border: none;
 }
 
-.authKey{
-	max-width: 190px;
+table td button, table td input {
+	margin-top: 0 !important;
+	margin-bottom: 0 !important;
 }
 
-td[data-label='Auth']{
-	white-space: nowrap;
+table td::before {
+	margin-right: 1rem;
+}
+
+button {
+	margin: calc(var(--universal-margin) / 2);
 }
 
 .inputAddon{
@@ -35,10 +33,68 @@ h1 a{
 	color: var(--fore-color) !important;
 }
 
+/* hide genkey if we don't have native crypto support */
+body.crypto .generateKey {
+	display: inline-block;
+}
+
+.generateKey {
+	display: none;
+}
+
+/* cleanup table entries */
+td[data-label='Auth'], th[data-label='Auth']{
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	white-space: nowrap;
+	flex: 1 50px !important;
+}
+
+td[data-label='Auth'] .authKey{
+	min-width: 110px;
+	flex: auto;
+	margin-left: auto;
+}
+
+td[data-label='Notes'], th[data-label='Notes']{
+	flex: 2 !important;
+}
+
+/* form */
+button.primary{
+	flex: auto;
+	justify-content: center;
+}
+
+.addForm > .row > * {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.addForm label {
+	flex-basis: 120px;
+}
+
+.addForm input, .addForm select {
+	flex: auto;
+}
+
+/* media queries */
 @media (min-width: 768px) {
 	td[data-label='Name'], td[data-label='Expire']{
-		line-height: 3.5rem;
+		line-height: 2.5rem;
 		font-size: calc(1rem * var(--heading-ratio));
+	}
+
+	td[data-label='Notes']{
+		padding-top: calc(3 * var(--universal-padding));
+		padding-bottom: calc(3 * var(--universal-padding));
+	}
+
+	button.primary{
+		flex: 0.5;
 	}
 }
 

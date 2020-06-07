@@ -16,6 +16,7 @@ var templates = template.Must(template.New("form.html").Parse(
 <head>
   <meta charset="UTF-8">
   <title>RTMP Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" type="text/css" href="{{.Store.Prefix}}/public/mini-dark.css">
   <link rel="stylesheet" type="text/css" href="{{.Store.Prefix}}/public/main.css">
 </head>
@@ -38,9 +39,9 @@ var templates = template.Must(template.New("form.html").Parse(
     <table>
       <thead>
         <th>Name</th>
-        <th>Auth</th>
+        <th data-label="Auth">Auth</th>
         <th>Expires</th>
-		<th>Notes</th>
+		    <th data-label="Notes">Notes</th>
         <th></th>
       </thead>
       <tbody>
@@ -53,7 +54,7 @@ var templates = template.Must(template.New("form.html").Parse(
             {{end}}
           </td>
           <td data-label="Auth">
-            <input class="authKey" value="{{.AuthKey}}" readonly/><button class="secondary copyToClipboard inputAddon">Copy</button>
+            <input class="authKey" size="5" value="{{.AuthKey}}" readonly/><button class="secondary copyToClipboard inputAddon">Copy</button>
           </td>
           <td data-label="Expire" data-expire="{{.AuthExpire}}">
             {{if eq .AuthExpire -1}}
@@ -62,7 +63,7 @@ var templates = template.Must(template.New("form.html").Parse(
               {{.AuthExpire}}
             {{end}}
           </td>
-          <td style="text-align:right;">{{.Notes}}</td>
+          <td data-label="Notes">{{.Notes}}</td>
           <td style="text-align:right;">
             <form class="inline" action="{{$.Store.Prefix}}/remove" method="POST">
               {{ $.CsrfTemplate }}
@@ -76,7 +77,7 @@ var templates = template.Must(template.New("form.html").Parse(
     </table>
 
     <h2>Add Stream</h2>
-    <form action="{{$.Store.Prefix}}/add" method="POST" novalidate>
+    <form class="addForm" action="{{$.Store.Prefix}}/add" method="POST" novalidate>
       <div class="row">
         <div class="col-sm-12 col-md-6">
           <label for="application">Application</label>
@@ -89,12 +90,12 @@ var templates = template.Must(template.New("form.html").Parse(
 
         <div class="col-sm-12 col-md-6">
           <label for="stream">Stream</label>
-          <input type="text" id="stream" name="name" placeholder="enter name">
+          <input type="text" size="5" id="stream" name="name" placeholder="enter name">
         </div>
 
         <div class="col-sm-12 col-md-6">
           <label for="authKey">Auth Key</label>
-          <input type="text" id="authKey" name="auth_key" placeholder="no auth"><button class="secondary generateKey inputAddon">Generate key</button>
+          <input type="text" size="3" id="authKey" name="auth_key" placeholder="no auth"><button class="secondary generateKey inputAddon">Generate key</button>
         </div>
 
         <div class="col-sm-12 col-md-6">
@@ -103,18 +104,20 @@ var templates = template.Must(template.New("form.html").Parse(
               <span class="icon-help"></span>
             </span>
           </label>
-          <input type="text" id="authExpire" name="auth_expire" placeholder="never">
+          <input type="text" size="5" id="authExpire" name="auth_expire" placeholder="never">
         </div>
 
-        <div class="col-sm-12 col-md-6">
-          <label for="authKey">Notes</label>
-          <input type="text" id="notes" name="notes" placeholder="optional notes">
+        <div class="col-sm-12">
+          <label for="notes">Notes</label>
+          <input type="text" size="5" id="notes" name="notes" placeholder="optional notes">
         </div>
       </div>
 
       <div class="row">
         {{ .CsrfTemplate }}
-        <button class="primary">Submit</button>
+        <div class="col-sm-12 col-md-12">
+          <button class="primary">Submit</button>
+        </div>
       </div>
     </form>
   </div>
