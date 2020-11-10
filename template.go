@@ -11,7 +11,7 @@ type TemplateData struct {
 }
 
 var templates = template.Must(template.New("form.html").Parse(
-	`<!DOCTYPE html>
+`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -41,7 +41,7 @@ var templates = template.Must(template.New("form.html").Parse(
         <th>Name</th>
         <th data-label="Auth">Auth</th>
         <th>Expires</th>
-		    <th data-label="Notes">Notes</th>
+        <th data-label="Notes">Notes</th>
         <th></th>
       </thead>
       <tbody>
