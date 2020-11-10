@@ -61,6 +61,10 @@ td[data-label='Auth'] .authKey{
 	margin-left: auto;
 }
 
+td[data-label='Blocked'] {
+	line-height: 2.5;
+}
+
 td[data-label='Notes'], th[data-label='Notes']{
 	flex: 2 !important;
 }
