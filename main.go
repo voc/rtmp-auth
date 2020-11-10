@@ -194,7 +194,7 @@ func BlockHandler(store *Store) handleFunc {
 		app := r.PostFormValue("application")
 		name := r.PostFormValue("name")
 		state, _ := strconv.ParseBool(r.PostFormValue("blocked"))
-    newstate, action := func(bool) (bool, string) { if state == true { return false, "unblock"} else {return true, "block"}}(state)
+		newstate, action := func(bool) (bool, string) { if state == true { return false, "unblock"} else {return true, "block"}}(state)
 
 		err := store.SetBlocked(id, newstate)
 		log.Printf("%ved Stream %v (%v/%v)", action, id, app, name)
