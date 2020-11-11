@@ -61,8 +61,6 @@ var templates = template.Must(template.New("form.html").Parse(
             <form class="inline" action="{{$.Store.Prefix}}/block" method="POST" novalidate>
               {{ $.CsrfTemplate }}
               <input type="hidden" name="id" value="{{.Id}}">
-              <input type="hidden" name="application" value="{{.Application}}">
-              <input type="hidden" name="name" value="{{.Name}}">
               <input type="hidden" name="blocked" value="{{.Blocked}}">
               <input type="checkbox" oninput="this.form.submit();"{{if eq .Blocked true}} checked{{end}}>
             </form>

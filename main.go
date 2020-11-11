@@ -191,10 +191,17 @@ func BlockHandler(store *Store) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var errs []error
 		id := r.PostFormValue("id")
-		app := r.PostFormValue("application")
-		name := r.PostFormValue("name")
 		state, _ := strconv.ParseBool(r.PostFormValue("blocked"))
 		newstate, action := func(bool) (bool, string) { if state == true { return false, "unblock"} else {return true, "block"}}(state)
+
+    // Get Application/Name for stream id
+    var app, name string
+    for _, stream := range store.State.Streams {
+      if stream.Id == id {
+        app = stream.Application
+        name = stream.Name
+      }
+    }
 
 		err := store.SetBlocked(id, newstate)
 		log.Printf("%ved Stream %v (%v/%v)", action, id, app, name)
