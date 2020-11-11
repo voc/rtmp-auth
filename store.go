@@ -38,11 +38,28 @@ func NewStore(path string, apps []string, prefix string) (*Store, error) {
 	return store, nil
 }
 
-func (store *Store) Auth(app string, name string, auth string) bool {
+func (store *Store) Auth(app string, name string, auth string) (success bool, id string) {
 	store.RLock()
 	defer store.RUnlock()
 	for _, stream := range store.State.Streams {
 		if stream.Application == app && stream.Name == name && stream.AuthKey == auth {
+			return true, stream.Id
+		}
+	}
+
+	return false, ""
+}
+
+// SetActive sets a stream to active state by its id, returns success
+func (store *Store) SetActive(id string) bool {
+	store.Lock()
+	defer store.Unlock()
+	for _, stream := range store.State.Streams {
+		if stream.Id == id {
+			stream.Active = true
+			if err := store.save(); err != nil {
+				log.Println(err)
+			}
 			return true
 		}
 	}
@@ -50,13 +67,13 @@ func (store *Store) Auth(app string, name string, auth string) bool {
 	return false
 }
 
-// SetActive changes a streams active state, returns success
-func (store *Store) SetActive(app string, name string, state bool) bool {
+// SetInactive unsets the active state for all streams defined for app/name, returns success
+func (store *Store) SetInactive(app string, name string) bool {
 	store.Lock()
 	defer store.Unlock()
 	for _, stream := range store.State.Streams {
 		if stream.Application == app && stream.Name == name {
-			stream.Active = state
+			stream.Active = false
 			if err := store.save(); err != nil {
 				log.Println(err)
 			}

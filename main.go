@@ -84,15 +84,15 @@ func PublishHandler(store *Store) handleFunc {
 
 		log.Printf("publish %s/%s auth: '%s'\n", app, name, auth)
 
-		success := store.Auth(app, name, auth)
+		success, id := store.Auth(app, name, auth)
 		if !success {
-			log.Printf("Publish %s/%s unauthorized\n", app, name)
+			log.Printf("Publish %s %s/%s unauthorized\n", id, app, name)
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		store.SetActive(app, name, true)
-		log.Printf("Publish %s/%s ok\n", app, name)
+		store.SetActive(id)
+		log.Printf("Publish %s %s/%s ok\n", id, app, name)
 	}
 }
 
