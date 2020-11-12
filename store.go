@@ -49,7 +49,12 @@ func (store *Store) Auth(app string, name string, auth string) (success bool, id
 	for _, stream := range store.State.Streams {
 		if stream.Application == app && stream.Name == name && stream.AuthKey == auth {
 			if stream.Blocked == false {
-				conflict := store.GetAppNameActive(app, name)
+				var conflict bool
+				if stream.Active == true {
+					conflict = false
+				} else {
+					conflict = store.GetAppNameActive(app, name)
+				}
 				return !conflict, stream.Id
 			} else {
 				return false, stream.Id
