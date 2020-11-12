@@ -84,6 +84,23 @@ func (store *Store) SetInactive(app string, name string) bool {
 	return false
 }
 
+// SetBlocked changes a streams blocked state
+func (store *Store) SetBlocked(id string, state bool) error {
+	store.Lock()
+	defer store.Unlock()
+
+	for _, stream := range store.State.Streams {
+		if stream.Id == id {
+			stream.Blocked = state
+			if err := store.save(); err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+	return nil
+}
+
 func (store *Store) AddStream(stream *storage.Stream) error {
 	store.Lock()
 	defer store.Unlock()
@@ -94,6 +111,7 @@ func (store *Store) AddStream(stream *storage.Stream) error {
 	}
 
 	stream.Id = id.String()
+	stream.Blocked = false;
 	store.State.Streams = append(store.State.Streams, stream)
 
 	if err := store.save(); err != nil {

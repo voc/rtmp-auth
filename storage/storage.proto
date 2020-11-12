@@ -15,4 +15,5 @@ message Stream {
     int64 auth_expire = 5;
     string id = 6;
     string notes = 7;
+    bool blocked = 8;
 }
