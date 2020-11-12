@@ -150,8 +150,13 @@ func AddHandler(store *Store) handleFunc {
 				Notes:       r.PostFormValue("notes"),
 			}
 
-			store.AddStream(stream)
+			err := store.AddStream(stream)
 			log.Println("store add", stream, store.State)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("Failed to add stream: %v", err))
+			} else {
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+			}
 		}
 
 		data := TemplateData{
@@ -170,19 +175,22 @@ func RemoveHandler(store *Store) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var errs []error
 		id := r.PostFormValue("id")
+
 		err := store.RemoveStream(id)
 		if err != nil {
 			log.Println(err)
 			errs = append(errs, fmt.Errorf("Failed to remove stream: %v", err))
-		}
-		data := TemplateData{
-			Store:        store.Get(),
-			CsrfTemplate: csrf.TemplateField(r),
-			Errors:       errs,
-		}
-		err = templates.ExecuteTemplate(w, "form.html", data)
-		if err != nil {
-			log.Println("Template failed", err)
+			data := TemplateData{
+				Store:        store.Get(),
+				CsrfTemplate: csrf.TemplateField(r),
+				Errors:       errs,
+			}
+			err = templates.ExecuteTemplate(w, "form.html", data)
+			if err != nil {
+				log.Println("Template failed", err)
+			}
+		} else {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 		}
 	}
 }
