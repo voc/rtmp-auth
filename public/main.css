@@ -20,6 +20,10 @@ table td::before {
 	margin-right: 1rem;
 }
 
+table td {
+	border-top-color: var(--table-border-separator-color);
+}
+
 button {
 	margin: calc(var(--universal-margin) / 2);
 }
