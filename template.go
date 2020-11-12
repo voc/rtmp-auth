@@ -40,6 +40,7 @@ var templates = template.Must(template.New("form.html").Parse(
       <thead>
         <th>Name</th>
         <th data-label="Auth">Auth</th>
+        <th data-label="Blocked">Blocked</th>
         <th>Expires</th>
         <th data-label="Notes">Notes</th>
         <th></th>
@@ -55,6 +56,14 @@ var templates = template.Must(template.New("form.html").Parse(
           </td>
           <td data-label="Auth">
             <input class="authKey" size="5" value="{{.AuthKey}}" readonly/><button class="secondary copyToClipboard inputAddon">Copy</button>
+          </td>
+          <td data-label="Blocked">
+            <form class="inline" action="{{$.Store.Prefix}}/block" method="POST" novalidate>
+              {{ $.CsrfTemplate }}
+              <input type="hidden" name="id" value="{{.Id}}">
+              <input type="hidden" name="blocked" value="{{.Blocked}}">
+              <input type="checkbox" oninput="this.form.submit();"{{if eq .Blocked true}} checked{{end}}>
+            </form>
           </td>
           <td data-label="Expire" data-expire="{{.AuthExpire}}">
             {{if eq .AuthExpire -1}}

@@ -195,6 +195,43 @@ func RemoveHandler(store *Store) handleFunc {
 	}
 }
 
+func BlockHandler(store *Store) handleFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var errs []error
+		id := r.PostFormValue("id")
+		state, _ := strconv.ParseBool(r.PostFormValue("blocked"))
+		newstate, action := func(bool) (bool, string) { if state == true { return false, "unblock"} else {return true, "block"}}(state)
+
+		// Get Application/Name for stream id
+		var app, name string
+		for _, stream := range store.State.Streams {
+			if stream.Id == id {
+				app = stream.Application
+				name = stream.Name
+			}
+		}
+
+		err := store.SetBlocked(id, newstate)
+		log.Printf("%ved Stream %v (%v/%v)", action, id, app, name)
+		if err != nil {
+			log.Println(err)
+			errs = append(errs, fmt.Errorf("Failed to %v stream %v (%v/%v)", action, id, app, name))
+
+			data := TemplateData{
+				Store:        store.Get(),
+				CsrfTemplate: csrf.TemplateField(r),
+				Errors:       errs,
+			}
+			err = templates.ExecuteTemplate(w, "form.html", data)
+			if err != nil {
+				log.Println("Template failed", err)
+			}
+		} else {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+		}
+	}
+}
+
 func main() {
 	var path = flag.String("store", "store.db", "Path to store file")
 	var apps = flag.String("app", "stream", "Comma separated list of RTMP applications")
@@ -225,6 +262,7 @@ func main() {
 	sub.Path("/").Methods("GET").HandlerFunc(FormHandler(store))
 	sub.Path("/add").Methods("POST").HandlerFunc(AddHandler(store))
 	sub.Path("/remove").Methods("POST").HandlerFunc(RemoveHandler(store))
+	sub.Path("/block").Methods("POST").HandlerFunc(BlockHandler(store))
 	sub.PathPrefix("/public/").Handler(
 		http.StripPrefix(*prefix+"/public/", http.FileServer(statikFS)))
 
