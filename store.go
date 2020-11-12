@@ -38,50 +38,74 @@ func NewStore(path string, apps []string, prefix string) (*Store, error) {
 	return store, nil
 }
 
+// Auth looks up if a given app/name/key tuple is allowed to publish.
+// Returns success (bool) and the matched streams id string
+// TODO: Return error values to distinguish i.e. 401 Unauthorized
+// and 409 Conflict return codes in the publish request handler
 func (store *Store) Auth(app string, name string, auth string) (success bool, id string) {
 	store.RLock()
 	defer store.RUnlock()
+
 	for _, stream := range store.State.Streams {
-		if stream.Application == app && stream.Name == name && stream.AuthKey == auth && stream.Blocked == false {
-			return true, stream.Id
+		if stream.Application == app && stream.Name == name && stream.AuthKey == auth {
+			if stream.Blocked == false {
+				conflict := store.GetAppNameActive(app, name)
+				return !conflict, stream.Id
+			} else {
+				return false, stream.Id
+			}
 		}
 	}
-
 	return false, ""
+}
+
+// GetAppNameActive returns true if there is an active stream on app/name
+func (store *Store) GetAppNameActive(app string, name string) bool {
+	active := false
+	for _, stream := range store.State.Streams {
+		if stream.Application == app && stream.Name == name && stream.Active == true {
+			active = true
+		}
+	}
+	return active
 }
 
 // SetActive sets a stream to active state by its id, returns success
 func (store *Store) SetActive(id string) bool {
 	store.Lock()
 	defer store.Unlock()
+
+  success := false
 	for _, stream := range store.State.Streams {
 		if stream.Id == id {
 			stream.Active = true
 			if err := store.save(); err != nil {
 				log.Println(err)
+			} else {
+				success = true
 			}
-			return true
 		}
 	}
-
-	return false
+	return success
 }
 
 // SetInactive unsets the active state for all streams defined for app/name, returns success
 func (store *Store) SetInactive(app string, name string) bool {
 	store.Lock()
 	defer store.Unlock()
+
+	success := false
 	for _, stream := range store.State.Streams {
 		if stream.Application == app && stream.Name == name {
 			stream.Active = false
 			if err := store.save(); err != nil {
 				log.Println(err)
+			} else {
+				success = true
 			}
-			return true
 		}
 	}
-
-	return false
+	return success
 }
 
 // SetBlocked changes a streams blocked state
