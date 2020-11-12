@@ -38,33 +38,96 @@ func NewStore(path string, apps []string, prefix string) (*Store, error) {
 	return store, nil
 }
 
-func (store *Store) Auth(app string, name string, auth string) bool {
+// Auth looks up if a given app/name/key tuple is allowed to publish.
+// Returns success (bool) and the matched streams id string
+// TODO: Return error values to distinguish i.e. 401 Unauthorized
+// and 409 Conflict return codes in the publish request handler
+func (store *Store) Auth(app string, name string, auth string) (success bool, id string) {
 	store.RLock()
 	defer store.RUnlock()
+
 	for _, stream := range store.State.Streams {
 		if stream.Application == app && stream.Name == name && stream.AuthKey == auth {
-			return true
+			if stream.Blocked == false {
+				var conflict bool
+				if stream.Active == true {
+					conflict = false
+				} else {
+					conflict = store.GetAppNameActive(app, name)
+				}
+				return !conflict, stream.Id
+			} else {
+				return false, stream.Id
+			}
 		}
 	}
-
-	return false
+	return false, ""
 }
 
-// SetActive changes a streams active state, returns success
-func (store *Store) SetActive(app string, name string, state bool) bool {
-	store.Lock()
-	defer store.Unlock()
+// GetAppNameActive returns true if there is an active stream on app/name
+func (store *Store) GetAppNameActive(app string, name string) bool {
+	active := false
 	for _, stream := range store.State.Streams {
-		if stream.Application == app && stream.Name == name {
-			stream.Active = state
-			if err := store.save(); err != nil {
-				log.Println(err)
-			}
-			return true
+		if stream.Application == app && stream.Name == name && stream.Active == true {
+			active = true
 		}
 	}
+	return active
+}
 
-	return false
+// SetActive sets a stream to active state by its id, returns success
+func (store *Store) SetActive(id string) bool {
+	store.Lock()
+	defer store.Unlock()
+
+  success := false
+	for _, stream := range store.State.Streams {
+		if stream.Id == id {
+			stream.Active = true
+			if err := store.save(); err != nil {
+				log.Println(err)
+			} else {
+				success = true
+			}
+		}
+	}
+	return success
+}
+
+// SetInactive unsets the active state for all streams defined for app/name, returns success
+func (store *Store) SetInactive(app string, name string) bool {
+	store.Lock()
+	defer store.Unlock()
+
+	success := false
+	for _, stream := range store.State.Streams {
+		if stream.Application == app && stream.Name == name {
+			stream.Active = false
+			if err := store.save(); err != nil {
+				log.Println(err)
+			} else {
+				success = true
+			}
+		}
+	}
+	return success
+}
+
+// SetBlocked changes a streams blocked state
+func (store *Store) SetBlocked(id string, state bool) error {
+	store.Lock()
+	defer store.Unlock()
+
+	for _, stream := range store.State.Streams {
+		if stream.Id == id {
+			stream.Blocked = state
+			if err := store.save(); err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+	return nil
 }
 
 func (store *Store) AddStream(stream *storage.Stream) error {
@@ -77,6 +140,7 @@ func (store *Store) AddStream(stream *storage.Stream) error {
 	}
 
 	stream.Id = id.String()
+	stream.Blocked = false;
 	store.State.Streams = append(store.State.Streams, stream)
 
 	if err := store.save(); err != nil {

@@ -20,6 +20,10 @@ table td::before {
 	margin-right: 1rem;
 }
 
+table td {
+	border-top-color: var(--table-border-separator-color);
+}
+
 button {
 	margin: calc(var(--universal-margin) / 2);
 }
@@ -55,6 +59,10 @@ td[data-label='Auth'] .authKey{
 	min-width: 110px;
 	flex: auto;
 	margin-left: auto;
+}
+
+td[data-label='Blocked'] {
+	line-height: 2.5;
 }
 
 td[data-label='Notes'], th[data-label='Notes']{

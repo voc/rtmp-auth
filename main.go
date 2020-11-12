@@ -84,15 +84,15 @@ func PublishHandler(store *Store) handleFunc {
 
 		log.Printf("publish %s/%s auth: '%s'\n", app, name, auth)
 
-		success := store.Auth(app, name, auth)
+		success, id := store.Auth(app, name, auth)
 		if !success {
-			log.Printf("Publish %s/%s unauthorized\n", app, name)
+			log.Printf("Publish %s %s/%s unauthorized\n", id, app, name)
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		store.SetActive(app, name, true)
-		log.Printf("Publish %s/%s ok\n", app, name)
+		store.SetActive(id)
+		log.Printf("Publish %s %s/%s ok\n", id, app, name)
 	}
 }
 
@@ -108,7 +108,7 @@ func UnpublishHandler(store *Store) handleFunc {
 		app := r.PostForm.Get("app")
 		name := r.PostForm.Get("name")
 
-		store.SetActive(app, name, false)
+		store.SetInactive(app, name)
 		log.Printf("Unpublish %s/%s ok\n", app, name)
 	}
 }
@@ -150,8 +150,13 @@ func AddHandler(store *Store) handleFunc {
 				Notes:       r.PostFormValue("notes"),
 			}
 
-			store.AddStream(stream)
+			err := store.AddStream(stream)
 			log.Println("store add", stream, store.State)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("Failed to add stream: %v", err))
+			} else {
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+			}
 		}
 
 		data := TemplateData{
@@ -170,19 +175,59 @@ func RemoveHandler(store *Store) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var errs []error
 		id := r.PostFormValue("id")
+
 		err := store.RemoveStream(id)
 		if err != nil {
 			log.Println(err)
 			errs = append(errs, fmt.Errorf("Failed to remove stream: %v", err))
+			data := TemplateData{
+				Store:        store.Get(),
+				CsrfTemplate: csrf.TemplateField(r),
+				Errors:       errs,
+			}
+			err = templates.ExecuteTemplate(w, "form.html", data)
+			if err != nil {
+				log.Println("Template failed", err)
+			}
+		} else {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 		}
-		data := TemplateData{
-			Store:        store.Get(),
-			CsrfTemplate: csrf.TemplateField(r),
-			Errors:       errs,
+	}
+}
+
+func BlockHandler(store *Store) handleFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var errs []error
+		id := r.PostFormValue("id")
+		state, _ := strconv.ParseBool(r.PostFormValue("blocked"))
+		newstate, action := func(bool) (bool, string) { if state == true { return false, "unblock"} else {return true, "block"}}(state)
+
+		// Get Application/Name for stream id
+		var app, name string
+		for _, stream := range store.State.Streams {
+			if stream.Id == id {
+				app = stream.Application
+				name = stream.Name
+			}
 		}
-		err = templates.ExecuteTemplate(w, "form.html", data)
+
+		err := store.SetBlocked(id, newstate)
+		log.Printf("%ved Stream %v (%v/%v)", action, id, app, name)
 		if err != nil {
-			log.Println("Template failed", err)
+			log.Println(err)
+			errs = append(errs, fmt.Errorf("Failed to %v stream %v (%v/%v)", action, id, app, name))
+
+			data := TemplateData{
+				Store:        store.Get(),
+				CsrfTemplate: csrf.TemplateField(r),
+				Errors:       errs,
+			}
+			err = templates.ExecuteTemplate(w, "form.html", data)
+			if err != nil {
+				log.Println("Template failed", err)
+			}
+		} else {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 		}
 	}
 }
@@ -217,6 +262,7 @@ func main() {
 	sub.Path("/").Methods("GET").HandlerFunc(FormHandler(store))
 	sub.Path("/add").Methods("POST").HandlerFunc(AddHandler(store))
 	sub.Path("/remove").Methods("POST").HandlerFunc(RemoveHandler(store))
+	sub.Path("/block").Methods("POST").HandlerFunc(BlockHandler(store))
 	sub.PathPrefix("/public/").Handler(
 		http.StripPrefix(*prefix+"/public/", http.FileServer(statikFS)))
 
