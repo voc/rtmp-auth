@@ -1,0 +1,6 @@
+rtmp-auth
+--------
+
+Simple auth backend for nginx-rtmp module written in go.
+
+ -- derchris <derchris@me.com>  Fri, 09 Apr 2021 00:17:00 +0200

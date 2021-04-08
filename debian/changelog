@@ -1,0 +1,5 @@
+rtmp-auth (0.1.0) buster; urgency=medium
+
+  * Initial release.
+
+ -- derchris <derchris@me.com>  Fri, 09 Apr 2021 00:17:00 +0200

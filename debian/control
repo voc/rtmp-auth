@@ -1,0 +1,14 @@
+Source: rtmp-auth
+Section: video
+Priority: optional
+Maintainer: derchris <derchris@me.com>
+Build-Depends: debhelper (>=10), pkgconf, ssl-cert, ca-certificates, tar, wget, curl, git, golang
+Standards-Version: 4.50
+Homepage: https://github.com/voc/rtmp-auth
+
+Package: rtmp-auth
+Priority: extra
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: srtrelay
+ Simple auth backend for nginx-rtmp module written in go.
