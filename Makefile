@@ -1,8 +1,7 @@
 # parameters
 GOBUILD=HOME=$$(pwd) GOPATH=$$(pwd)/gopath go build
 GOCLEAN=HOME=$$(pwd) GOPATH=$$(pwd)/gopath go clean
-PROTOC=protoc
-STATIK=statik
+STATIK=$(GOPATH)/bin/statik
 BINARY_NAME=rtmp-auth
 GOPATH=$$(pwd)/gopath
 PROTOC_GEN_GO := $(GOPATH)/bin/protoc-gen-go
@@ -22,7 +21,7 @@ storage/storage.pb.go: storage/storage.proto | $(PROTOC_GEN_GO) $(PROTOC)
 		echo "error: protoc not installed" >&2; \
 		exit 1; \
 	fi
-	$(PROTOC) -I=storage/ --go_out=storage/ storage/storage.proto
+	protoc -I=storage/ --go_out=storage/ storage/storage.proto
 
 $(STATIK_GENERATED): $(PUBLIC_FILES)
 	mkdir -p $$(pwd)/gopath

@@ -2,7 +2,7 @@ Source: rtmp-auth
 Section: video
 Priority: optional
 Maintainer: derchris <derchris@me.com>
-Build-Depends: debhelper (>=10), pkgconf, ssl-cert, ca-certificates, tar, wget, curl, git, golang
+Build-Depends: debhelper (>=10), pkgconf, ssl-cert, ca-certificates, tar, wget, curl, git, golang, golang-goprotobuf-dev
 Standards-Version: 4.50
 Homepage: https://github.com/voc/rtmp-auth
 
