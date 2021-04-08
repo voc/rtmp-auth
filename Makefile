@@ -17,8 +17,12 @@ $(PROTOC_GEN_GO):
 	mkdir -p $$(pwd)/gopath
 	HOME=$$(pwd) GOPATH=$$(pwd)/gopath go get -u github.com/golang/protobuf/protoc-gen-go
 
-%.pb.go: %.proto
-	$(PROTOC) -I=storage/ --go_out=storage/ $<
+storage/storage.pb.go: storage/storage.proto | $(PROTOC_GEN_GO) $(PROTOC)
+	@ if ! which protoc > /dev/null; then \
+		echo "error: protoc not installed" >&2; \
+		exit 1; \
+	fi
+	$(PROTOC) -I=storage/ --go_out=storage/ storage/storage.proto
 
 $(STATIK_GENERATED): $(PUBLIC_FILES)
 	mkdir -p $$(pwd)/gopath
