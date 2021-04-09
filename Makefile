@@ -43,5 +43,5 @@ all: build
 .PHONY: all
 
 install: rtmp-auth
-	mkdir -p $$(pwd)/debian/$(BINARY_NAME)/usr/local/bin
-	install -m 0755 $(BINARY_NAME) $$(pwd)/debian/$(BINARY_NAME)/usr/local/bin 
+	mkdir -p $$(pwd)/debian/$(BINARY_NAME)/usr/bin
+	install -m 0755 $(BINARY_NAME) $$(pwd)/debian/$(BINARY_NAME)/usr/bin 
