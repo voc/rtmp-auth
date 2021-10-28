@@ -1,24 +1,16 @@
-package main
+package http
 
 import (
-	"context"
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gorilla/csrf"
-	"github.com/gorilla/mux"
-	"github.com/rakyll/statik/fs"
-
-	_ "github.com/voc/rtmp-auth/statik"
 	"github.com/voc/rtmp-auth/storage"
+	"github.com/voc/rtmp-auth/store"
 )
 
 type handleFunc func(http.ResponseWriter, *http.Request)
@@ -35,7 +27,7 @@ func parseDurationPart(value string, unit time.Duration) time.Duration {
 }
 
 // Parse expiration time
-func ParseExpiry(str string) *int64 {
+func parseExpiry(str string) *int64 {
 	// Allow empty string for "never"
 	if str == "" {
 		never := int64(-1)
@@ -69,7 +61,7 @@ func ParseExpiry(str string) *int64 {
 	return &expiry
 }
 
-func PublishHandler(store *Store) handleFunc {
+func PublishHandler(store *store.Store) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
@@ -96,7 +88,7 @@ func PublishHandler(store *Store) handleFunc {
 	}
 }
 
-func UnpublishHandler(store *Store) handleFunc {
+func UnpublishHandler(store *store.Store) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
@@ -113,7 +105,7 @@ func UnpublishHandler(store *Store) handleFunc {
 	}
 }
 
-func FormHandler(store *Store) handleFunc {
+func FormHandler(store *store.Store) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data := TemplateData{
 			Store:        store.Get(),
@@ -126,11 +118,11 @@ func FormHandler(store *Store) handleFunc {
 	}
 }
 
-func AddHandler(store *Store) handleFunc {
+func AddHandler(store *store.Store) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var errs []error
 
-		expiry := ParseExpiry(r.PostFormValue("auth_expire"))
+		expiry := parseExpiry(r.PostFormValue("auth_expire"))
 		if expiry == nil {
 			errs = append(errs, fmt.Errorf("invalid auth expiry: '%v'", r.PostFormValue("auth_expire")))
 		}
@@ -171,7 +163,7 @@ func AddHandler(store *Store) handleFunc {
 	}
 }
 
-func RemoveHandler(store *Store) handleFunc {
+func RemoveHandler(store *store.Store) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var errs []error
 		id := r.PostFormValue("id")
@@ -195,7 +187,7 @@ func RemoveHandler(store *Store) handleFunc {
 	}
 }
 
-func BlockHandler(store *Store) handleFunc {
+func BlockHandler(store *store.Store) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var errs []error
 		id := r.PostFormValue("id")
@@ -236,98 +228,4 @@ func BlockHandler(store *Store) handleFunc {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 		}
 	}
-}
-
-func main() {
-	var path = flag.String("store", "store.db", "Path to store file")
-	var apps = flag.String("app", "stream", "Comma separated list of RTMP applications")
-	var apiAddr = flag.String("apiAddr", "localhost:8080", "API bind address")
-	var frontendAddr = flag.String("frontendAddr", "localhost:8082", "Frontend bind address")
-	var insecure = flag.Bool("insecure", false, "Set to allow non-secure CSRF cookie")
-	var prefix = flag.String("subpath", "", "Set to allow running behind reverse-proxy at that subpath")
-	flag.Parse()
-
-	store, err := NewStore(*path, strings.Split(*apps, ","), *prefix)
-	if err != nil {
-		log.Fatal("noo", err)
-	}
-
-	statikFS, err := fs.New()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	CSRF := csrf.Protect(store.State.Secret, csrf.Secure(!*insecure))
-
-	api := mux.NewRouter()
-	api.Path("/publish").Methods("POST").HandlerFunc(PublishHandler(store))
-	api.Path("/unpublish").Methods("POST").HandlerFunc(UnpublishHandler(store))
-
-	frontend := mux.NewRouter()
-	sub := frontend.PathPrefix(*prefix).Subrouter()
-	sub.Path("/").Methods("GET").HandlerFunc(FormHandler(store))
-	sub.Path("/add").Methods("POST").HandlerFunc(AddHandler(store))
-	sub.Path("/remove").Methods("POST").HandlerFunc(RemoveHandler(store))
-	sub.Path("/block").Methods("POST").HandlerFunc(BlockHandler(store))
-	sub.PathPrefix("/public/").Handler(
-		http.StripPrefix(*prefix+"/public/", http.FileServer(statikFS)))
-
-	apiServer := &http.Server{
-		Handler:      api,
-		Addr:         *apiAddr,
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
-	}
-
-	frontendServer := &http.Server{
-		Handler:      CSRF(frontend),
-		Addr:         *frontendAddr,
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
-	}
-
-	// Periodically expire old streams
-	ticker := time.NewTicker(10 * time.Second)
-	stopPolling := make(chan struct{})
-	go func() {
-		for {
-			select {
-			case <-stopPolling:
-				return
-			case <-ticker.C:
-				store.Expire()
-			}
-		}
-	}()
-
-	// Run http servers
-	go func() {
-		log.Println("API Listening on", apiServer.Addr)
-		if err := apiServer.ListenAndServe(); err != nil {
-			log.Println(err)
-		}
-	}()
-	go func() {
-		log.Println("Frontend Listening on", frontendServer.Addr)
-		if err := frontendServer.ListenAndServe(); err != nil {
-			log.Println(err)
-		}
-	}()
-
-	// Handle signals
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	<-c
-
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-	defer cancel()
-
-	// Shut everything down
-	close(stopPolling)
-	go apiServer.Shutdown(ctx)
-	go frontendServer.Shutdown(ctx)
-
-	// Wait until timeout
-	log.Println("Shutting down")
-	<-ctx.Done()
 }

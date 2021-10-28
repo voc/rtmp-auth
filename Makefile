@@ -19,7 +19,7 @@ $(STATIK_GENERATED): $(PUBLIC_FILES)
 	$(STATIK) -f -src=public/ -dest=.
 
 build: $(PROTO_GENERATED) $(STATIK_GENERATED)
-	$(GOBUILD) -o $(BINARY_NAME) -v
+	$(GOBUILD) -o $(BINARY_NAME) -v ./cmd/rtmp-auth
 .PHONY: build
 
 clean:

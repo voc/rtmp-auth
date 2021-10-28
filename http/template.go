@@ -1,17 +1,19 @@
-package main
+package http
 
 import (
 	"html/template"
+
+	"github.com/voc/rtmp-auth/store"
 )
 
 type TemplateData struct {
-	Store        Store
+	Store        store.Store
 	CsrfTemplate template.HTML
 	Errors       []error
 }
 
 var templates = template.Must(template.New("form.html").Parse(
-`<!DOCTYPE html>
+	`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
