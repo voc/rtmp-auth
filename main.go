@@ -132,12 +132,12 @@ func AddHandler(store *Store) handleFunc {
 
 		expiry := ParseExpiry(r.PostFormValue("auth_expire"))
 		if expiry == nil {
-			errs = append(errs, fmt.Errorf("Invalid auth expiry: '%v'", r.PostFormValue("auth_expire")))
+			errs = append(errs, fmt.Errorf("invalid auth expiry: '%v'", r.PostFormValue("auth_expire")))
 		}
 
 		name := r.PostFormValue("name")
 		if len(name) == 0 {
-			errs = append(errs, fmt.Errorf("Stream name must be set"))
+			errs = append(errs, fmt.Errorf("stream name must be set"))
 		}
 
 		// TODO: more validation
@@ -153,7 +153,7 @@ func AddHandler(store *Store) handleFunc {
 			err := store.AddStream(stream)
 			log.Println("store add", stream, store.State)
 			if err != nil {
-				errs = append(errs, fmt.Errorf("Failed to add stream: %v", err))
+				errs = append(errs, fmt.Errorf("failed to add stream: %w", err))
 			} else {
 				http.Redirect(w, r, "/", http.StatusSeeOther)
 			}
@@ -179,7 +179,7 @@ func RemoveHandler(store *Store) handleFunc {
 		err := store.RemoveStream(id)
 		if err != nil {
 			log.Println(err)
-			errs = append(errs, fmt.Errorf("Failed to remove stream: %v", err))
+			errs = append(errs, fmt.Errorf("failed to remove stream: %w", err))
 			data := TemplateData{
 				Store:        store.Get(),
 				CsrfTemplate: csrf.TemplateField(r),
@@ -199,8 +199,14 @@ func BlockHandler(store *Store) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var errs []error
 		id := r.PostFormValue("id")
+		newState := false
+		action := "unblock"
 		state, _ := strconv.ParseBool(r.PostFormValue("blocked"))
-		newstate, action := func(bool) (bool, string) { if state == true { return false, "unblock"} else {return true, "block"}}(state)
+
+		if !state {
+			newState = true
+			action = "block"
+		}
 
 		// Get Application/Name for stream id
 		var app, name string
@@ -211,11 +217,11 @@ func BlockHandler(store *Store) handleFunc {
 			}
 		}
 
-		err := store.SetBlocked(id, newstate)
+		err := store.SetBlocked(id, newState)
 		log.Printf("%ved Stream %v (%v/%v)", action, id, app, name)
 		if err != nil {
 			log.Println(err)
-			errs = append(errs, fmt.Errorf("Failed to %v stream %v (%v/%v)", action, id, app, name))
+			errs = append(errs, fmt.Errorf("failed to %v stream %v (%v/%v)", action, id, app, name))
 
 			data := TemplateData{
 				Store:        store.Get(),

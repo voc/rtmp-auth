@@ -48,9 +48,9 @@ func (store *Store) Auth(app string, name string, auth string) (success bool, id
 
 	for _, stream := range store.State.Streams {
 		if stream.Application == app && stream.Name == name && stream.AuthKey == auth {
-			if stream.Blocked == false {
+			if !stream.Blocked {
 				var conflict bool
-				if stream.Active == true {
+				if stream.Active {
 					conflict = false
 				} else {
 					conflict = store.GetAppNameActive(app, name)
@@ -68,7 +68,7 @@ func (store *Store) Auth(app string, name string, auth string) (success bool, id
 func (store *Store) GetAppNameActive(app string, name string) bool {
 	active := false
 	for _, stream := range store.State.Streams {
-		if stream.Application == app && stream.Name == name && stream.Active == true {
+		if stream.Application == app && stream.Name == name && stream.Active {
 			active = true
 		}
 	}
@@ -80,7 +80,7 @@ func (store *Store) SetActive(id string) bool {
 	store.Lock()
 	defer store.Unlock()
 
-  success := false
+	success := false
 	for _, stream := range store.State.Streams {
 		if stream.Id == id {
 			stream.Active = true
@@ -140,7 +140,7 @@ func (store *Store) AddStream(stream *storage.Stream) error {
 	}
 
 	stream.Id = id.String()
-	stream.Blocked = false;
+	stream.Blocked = false
 	store.State.Streams = append(store.State.Streams, stream)
 
 	if err := store.save(); err != nil {
@@ -213,10 +213,10 @@ func (store *Store) read() error {
 		if os.IsNotExist(err) {
 			return nil
 		}
-		return fmt.Errorf("No previous file read: %v", err)
+		return fmt.Errorf("no previous file read: %w", err)
 	}
 	if err := proto.Unmarshal(data, &store.State); err != nil {
-		return fmt.Errorf("Failed to parse stream state: %v", err)
+		return fmt.Errorf("failed to parse stream state: %w", err)
 	}
 	log.Println("State restored from", store.Path)
 	return nil
@@ -227,15 +227,15 @@ func (store *Store) read() error {
 func (store *Store) save() error {
 	out, err := proto.Marshal(&store.State)
 	if err != nil {
-		return fmt.Errorf("Failed to encode state: %v", err)
+		return fmt.Errorf("failed to encode state: %w", err)
 	}
 	tmp := fmt.Sprintf(store.Path+".%v", time.Now())
 	if err := ioutil.WriteFile(tmp, out, 0600); err != nil {
-		return fmt.Errorf("Failed to write state: %v", err)
+		return fmt.Errorf("failed to write state: %w", err)
 	}
 	err = os.Rename(tmp, store.Path)
 	if err != nil {
-		return fmt.Errorf("Failed to move state: %v", err)
+		return fmt.Errorf("failed to move state: %w", err)
 	}
 	return nil
 }
