@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/voc/rtmp-auth/storage"
 )
@@ -27,6 +27,11 @@ func NewStore(path string, apps []string, prefix string) (*Store, error) {
 	store := &Store{Path: path, Applications: apps, Prefix: prefix}
 	if err := store.read(); err != nil {
 		return nil, err
+	}
+
+	// Clear active information for old streams
+	for _, stream := range store.State.Streams {
+		stream.Active = false
 	}
 
 	if len(store.State.Secret) == 0 {
