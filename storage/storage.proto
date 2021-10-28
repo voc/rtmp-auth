@@ -1,5 +1,6 @@
 syntax = "proto3";
 package storage;
+option go_package = "github.com/voc/rtmp-auth/storage";
 
 message State {
     repeated Stream streams = 1;

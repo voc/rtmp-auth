@@ -12,7 +12,7 @@ PUBLIC_FILES=$(wildcard public/*)
 .DEFAULT_GOAL := build
 
 %.pb.go: %.proto
-	$(PROTOC) -I=storage/ --go_out=storage/ $<
+	$(PROTOC) -I=storage/ --go_opt=paths=source_relative --go_out=storage/ $<
 
 $(STATIK_GENERATED): $(PUBLIC_FILES)
 	echo "$(PUBLIC_FILES)"
