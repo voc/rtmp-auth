@@ -178,6 +178,9 @@ func UnpublishHandler(store *store.Store) handleFunc {
 		}
 		store.SetInactive(app, name)
 		log.Printf("Unpublish %s/%s ok\n", app, name)
+
+		// SRS needs zero response
+		w.Write([]byte("0"))
 	}
 }
 
