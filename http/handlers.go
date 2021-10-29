@@ -1,9 +1,11 @@
 package http
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"time"
@@ -61,18 +63,78 @@ func parseExpiry(str string) *int64 {
 	return &expiry
 }
 
+type SRSPublish struct {
+	Action string `json:"action"`
+	IP     string `json:"ip"`
+	VHost  string `json:"vhost"`
+	App    string `json:"app"`
+	Url    string `json:"tcUrl"`
+	Stream string `json:"stream"`
+	Param  string `json:"param"`
+}
+
+func handleSRSPublish(r *http.Request) (app string, name string, auth string, action string, err error) {
+	defer r.Body.Close()
+	var publish SRSPublish
+	dec := json.NewDecoder(r.Body)
+	err = dec.Decode(&publish)
+	if err != nil {
+		return
+	}
+
+	// skip question mark
+	if len(publish.Param) > 0 {
+		publish.Param = publish.Param[1:]
+	}
+
+	val, err := url.ParseQuery(publish.Param)
+	if err != nil {
+		return
+	}
+	app = publish.App
+	name = publish.Stream
+	auth = val.Get("auth")
+	action = publish.Action
+	return
+}
+
+func handleNginxPublish(r *http.Request) (app string, name string, auth string, err error) {
+	err = r.ParseForm()
+	if err != nil {
+		return
+	}
+
+	app = r.PostForm.Get("app")
+	name = r.PostForm.Get("name")
+	auth = r.PostForm.Get("auth")
+	return
+}
+
 func PublishHandler(store *store.Store) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		err := r.ParseForm()
+		defer r.Body.Close()
+		var app string
+		var name string
+		var auth string
+		var action string
+		var err error
+
+		if r.Header.Get("Content-Type") == "application/json" {
+			// SRS publish handler
+			app, name, auth, action, err = handleSRSPublish(r)
+			if action != "on_publish" {
+				err = fmt.Errorf("invalid action %s", action)
+			}
+		} else {
+			// Form DATA from nginx-rtmp/srtrelay
+			app, name, auth, err = handleNginxPublish(r)
+		}
+		log.Println(app, name, auth, err)
 		if err != nil {
 			log.Println("Failed to parse publish data:", err)
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
 		}
-
-		app := r.PostForm.Get("app")
-		name := r.PostForm.Get("name")
-		auth := r.PostForm.Get("auth")
 
 		log.Printf("publish %s/%s auth: '%s'\n", app, name, auth)
 
@@ -85,21 +147,35 @@ func PublishHandler(store *store.Store) handleFunc {
 
 		store.SetActive(id)
 		log.Printf("Publish %s %s/%s ok\n", id, app, name)
+
+		// SRS needs zero response
+		w.Write([]byte("0"))
 	}
 }
 
 func UnpublishHandler(store *store.Store) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		err := r.ParseForm()
+		var app string
+		var name string
+		var action string
+		var err error
+
+		if r.Header.Get("Content-Type") == "application/json" {
+			// SRS publish handler
+			app, name, _, action, err = handleSRSPublish(r)
+			if action != "on_unpublish" {
+				err = fmt.Errorf("invalid action %s", action)
+			}
+		} else {
+			// Form DATA from nginx-rtmp/srtrelay
+			app, name, _, err = handleNginxPublish(r)
+		}
+
 		if err != nil {
 			log.Println("Failed to parse unpublish data:", err)
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
 		}
-
-		app := r.PostForm.Get("app")
-		name := r.PostForm.Get("name")
-
 		store.SetInactive(app, name)
 		log.Printf("Unpublish %s/%s ok\n", app, name)
 	}
