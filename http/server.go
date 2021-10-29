@@ -29,9 +29,9 @@ func NewFrontend(address string, store *store.Store, prefix string, insecure boo
 	router := mux.NewRouter()
 	sub := router.PathPrefix(prefix).Subrouter()
 	sub.Path("/").Methods("GET").HandlerFunc(FormHandler(store))
-	sub.Path("/add").Methods("POST").HandlerFunc(AddHandler(store))
-	sub.Path("/remove").Methods("POST").HandlerFunc(RemoveHandler(store))
-	sub.Path("/block").Methods("POST").HandlerFunc(BlockHandler(store))
+	sub.Path("/add").Methods("POST").HandlerFunc(AddHandler(store, prefix))
+	sub.Path("/remove").Methods("POST").HandlerFunc(RemoveHandler(store, prefix))
+	sub.Path("/block").Methods("POST").HandlerFunc(BlockHandler(store, prefix))
 	sub.PathPrefix("/public/").Handler(
 		http.StripPrefix(prefix+"/public/", http.FileServer(statikFS)))
 

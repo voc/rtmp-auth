@@ -118,7 +118,7 @@ func FormHandler(store *store.Store) handleFunc {
 	}
 }
 
-func AddHandler(store *store.Store) handleFunc {
+func AddHandler(store *store.Store, prefix string) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var errs []error
 
@@ -147,7 +147,7 @@ func AddHandler(store *store.Store) handleFunc {
 			if err != nil {
 				errs = append(errs, fmt.Errorf("failed to add stream: %w", err))
 			} else {
-				http.Redirect(w, r, "/", http.StatusSeeOther)
+				http.Redirect(w, r, prefix, http.StatusSeeOther)
 			}
 		}
 
@@ -163,7 +163,7 @@ func AddHandler(store *store.Store) handleFunc {
 	}
 }
 
-func RemoveHandler(store *store.Store) handleFunc {
+func RemoveHandler(store *store.Store, prefix string) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var errs []error
 		id := r.PostFormValue("id")
@@ -182,12 +182,12 @@ func RemoveHandler(store *store.Store) handleFunc {
 				log.Println("Template failed", err)
 			}
 		} else {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, prefix, http.StatusSeeOther)
 		}
 	}
 }
 
-func BlockHandler(store *store.Store) handleFunc {
+func BlockHandler(store *store.Store, prefix string) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var errs []error
 		id := r.PostFormValue("id")
@@ -225,7 +225,7 @@ func BlockHandler(store *store.Store) handleFunc {
 				log.Println("Template failed", err)
 			}
 		} else {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, prefix, http.StatusSeeOther)
 		}
 	}
 }
