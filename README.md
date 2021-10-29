@@ -26,7 +26,7 @@ Then start it
 ```bash
 ./rtmp-auth -app "myrtmp" -apiAddr "localhost:8000" -frontendAddr "localhost:8082"
 ```
-It will now authenticate streams for the rtmp-app "myrtmp" (the app is the "directory" part of a rtmp url) like rtmp://<host>/<app>/<stream>
+It will now authenticate streams for the rtmp-app "myrtmp" (the app is the "directory" part of a rtmp url) like ```rtmp://<host>/<app>/<stream>```
 
 ### Nginx-RTMP
 Add on_publish/on_publish_done callbacks to your nginx-rtmp config
@@ -75,10 +75,10 @@ vhost __defaultVhost__ {
 ### WebUI
 **Note: You will need to set the -insecure flag when testing over http.**
 
-After you reloading your nginx/srs your rtmp publish-requests will be authenticated against the daemon.
-You can then visit localhost:8082 to add streams.
+After reloading your nginx/srs the rtmp publish-requests will be authenticated against the daemon.
+You can visit http://localhost:8082 to add streams.
 
-For production usage you will want to deploy the frontend behind a Reverse-Proxy with TLS-support like the nginx you already have.
+For production usage you will want to deploy the frontend behind a Reverse-Proxy with TLS-support like nginx.
 
 ### Publish a stream
 Now that you have set up your software you can start publishing streams
