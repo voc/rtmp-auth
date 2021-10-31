@@ -184,20 +184,27 @@ func UnpublishHandler(store *store.Store) handleFunc {
 	}
 }
 
-func FormHandler(store *store.Store) handleFunc {
+func FormHandler(store *store.Store, config ServerConfig) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		data := TemplateData{
-			Store:        store.Get(),
-			CsrfTemplate: csrf.TemplateField(r),
+		var errs []error
+		state, err := store.Get()
+		if err != nil {
+			errs = append(errs, err)
 		}
-		err := templates.ExecuteTemplate(w, "form.html", data)
+		data := TemplateData{
+			State:        state,
+			Config:       config,
+			CsrfTemplate: csrf.TemplateField(r),
+			Errors:       errs,
+		}
+		err = templates.ExecuteTemplate(w, "form.html", data)
 		if err != nil {
 			log.Println("Template failed", err)
 		}
 	}
 }
 
-func AddHandler(store *store.Store, prefix string) handleFunc {
+func AddHandler(store *store.Store, config ServerConfig) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var errs []error
 
@@ -222,27 +229,31 @@ func AddHandler(store *store.Store, prefix string) handleFunc {
 			}
 
 			err := store.AddStream(stream)
-			log.Println("store add", stream, store.State)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("failed to add stream: %w", err))
 			} else {
-				http.Redirect(w, r, prefix, http.StatusSeeOther)
+				http.Redirect(w, r, config.Prefix, http.StatusSeeOther)
 			}
 		}
 
+		state, err := store.Get()
+		if err != nil {
+			errs = append(errs, err)
+		}
 		data := TemplateData{
-			Store:        store.Get(),
+			State:        state,
+			Config:       config,
 			CsrfTemplate: csrf.TemplateField(r),
 			Errors:       errs,
 		}
-		err := templates.ExecuteTemplate(w, "form.html", data)
+		err = templates.ExecuteTemplate(w, "form.html", data)
 		if err != nil {
 			log.Println("Template failed", err)
 		}
 	}
 }
 
-func RemoveHandler(store *store.Store, prefix string) handleFunc {
+func RemoveHandler(store *store.Store, config ServerConfig) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var errs []error
 		id := r.PostFormValue("id")
@@ -251,8 +262,13 @@ func RemoveHandler(store *store.Store, prefix string) handleFunc {
 		if err != nil {
 			log.Println(err)
 			errs = append(errs, fmt.Errorf("failed to remove stream: %w", err))
+			state, err := store.Get()
+			if err != nil {
+				errs = append(errs, err)
+			}
 			data := TemplateData{
-				Store:        store.Get(),
+				State:        state,
+				Config:       config,
 				CsrfTemplate: csrf.TemplateField(r),
 				Errors:       errs,
 			}
@@ -261,41 +277,46 @@ func RemoveHandler(store *store.Store, prefix string) handleFunc {
 				log.Println("Template failed", err)
 			}
 		} else {
-			http.Redirect(w, r, prefix, http.StatusSeeOther)
+			http.Redirect(w, r, config.Prefix, http.StatusSeeOther)
 		}
 	}
 }
 
-func BlockHandler(store *store.Store, prefix string) handleFunc {
+func BlockHandler(store *store.Store, config ServerConfig) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var errs []error
 		id := r.PostFormValue("id")
-		newState := false
+		last, _ := strconv.ParseBool(r.PostFormValue("blocked"))
+		new := false
 		action := "unblock"
-		state, _ := strconv.ParseBool(r.PostFormValue("blocked"))
-
-		if !state {
-			newState = true
+		if !last {
+			new = true
 			action = "block"
 		}
 
 		// Get Application/Name for stream id
 		var app, name string
-		for _, stream := range store.State.Streams {
+		state, err := store.Get()
+		if err != nil {
+			errs = append(errs, err)
+		}
+		for _, stream := range state.Streams {
 			if stream.Id == id {
 				app = stream.Application
 				name = stream.Name
 			}
 		}
 
-		err := store.SetBlocked(id, newState)
-		log.Printf("%ved Stream %v (%v/%v)", action, id, app, name)
+		err = store.SetBlocked(id, new)
 		if err != nil {
 			log.Println(err)
 			errs = append(errs, fmt.Errorf("failed to %v stream %v (%v/%v)", action, id, app, name))
-
+		}
+		log.Printf("%ved Stream %v (%v/%v)", action, id, app, name)
+		if len(errs) > 0 {
 			data := TemplateData{
-				Store:        store.Get(),
+				State:        state,
+				Config:       config,
 				CsrfTemplate: csrf.TemplateField(r),
 				Errors:       errs,
 			}
@@ -304,7 +325,7 @@ func BlockHandler(store *store.Store, prefix string) handleFunc {
 				log.Println("Template failed", err)
 			}
 		} else {
-			http.Redirect(w, r, prefix, http.StatusSeeOther)
+			http.Redirect(w, r, config.Prefix, http.StatusSeeOther)
 		}
 	}
 }

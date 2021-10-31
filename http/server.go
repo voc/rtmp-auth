@@ -15,25 +15,35 @@ import (
 	"github.com/voc/rtmp-auth/store"
 )
 
+type ServerConfig struct {
+	Applications []string `toml:"applications"`
+	Prefix       string   `toml:"prefix"`
+	Insecure     bool     `toml:"insecure"`
+}
+
 type Frontend struct {
 	server *http.Server
 	done   sync.WaitGroup
 }
 
-func NewFrontend(address string, store *store.Store, prefix string, insecure bool) *Frontend {
-	CSRF := csrf.Protect(store.State.Secret, csrf.Secure(!insecure))
+func NewFrontend(address string, config ServerConfig, store *store.Store) *Frontend {
+	state, err := store.Get()
+	if err != nil {
+		log.Fatal("get", err)
+	}
+	CSRF := csrf.Protect(state.Secret, csrf.Secure(!config.Insecure))
 	statikFS, err := fs.New()
 	if err != nil {
 		log.Fatal(err)
 	}
 	router := mux.NewRouter()
-	sub := router.PathPrefix(prefix).Subrouter()
-	sub.Path("/").Methods("GET").HandlerFunc(FormHandler(store))
-	sub.Path("/add").Methods("POST").HandlerFunc(AddHandler(store, prefix))
-	sub.Path("/remove").Methods("POST").HandlerFunc(RemoveHandler(store, prefix))
-	sub.Path("/block").Methods("POST").HandlerFunc(BlockHandler(store, prefix))
+	sub := router.PathPrefix(config.Prefix).Subrouter()
+	sub.Path("/").Methods("GET").HandlerFunc(FormHandler(store, config))
+	sub.Path("/add").Methods("POST").HandlerFunc(AddHandler(store, config))
+	sub.Path("/remove").Methods("POST").HandlerFunc(RemoveHandler(store, config))
+	sub.Path("/block").Methods("POST").HandlerFunc(BlockHandler(store, config))
 	sub.PathPrefix("/public/").Handler(
-		http.StripPrefix(prefix+"/public/", http.FileServer(statikFS)))
+		http.StripPrefix(config.Prefix+"/public/", http.FileServer(statikFS)))
 
 	frontend := &Frontend{
 		server: &http.Server{
@@ -69,7 +79,7 @@ type API struct {
 	done   sync.WaitGroup
 }
 
-func NewAPI(address string, store *store.Store) *API {
+func NewAPI(address string, config ServerConfig, store *store.Store) *API {
 	router := mux.NewRouter()
 	router.Path("/publish").Methods("POST").HandlerFunc(PublishHandler(store))
 	router.Path("/unpublish").Methods("POST").HandlerFunc(UnpublishHandler(store))
