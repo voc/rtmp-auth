@@ -98,7 +98,7 @@ func handleSRSPublish(r *http.Request) (app string, name string, auth string, ac
 	return
 }
 
-func handleNginxPublish(r *http.Request) (app string, name string, auth string, err error) {
+func handleNginxPublish(r *http.Request) (app string, name string, auth string, action string, err error) {
 	err = r.ParseForm()
 	if err != nil {
 		return
@@ -107,6 +107,7 @@ func handleNginxPublish(r *http.Request) (app string, name string, auth string, 
 	app = r.PostForm.Get("app")
 	name = r.PostForm.Get("name")
 	auth = r.PostForm.Get("auth")
+	action = r.PostForm.Get("call")
 	return
 }
 
@@ -127,7 +128,13 @@ func PublishHandler(store *store.Store) handleFunc {
 			}
 		} else {
 			// Form DATA from nginx-rtmp/srtrelay
-			app, name, auth, err = handleNginxPublish(r)
+			app, name, auth, action, err = handleNginxPublish(r)
+			log.Println("publish action", action)
+
+			// only apply auth for publish
+			if action != "publish" {
+				return
+			}
 		}
 		log.Println(app, name, auth, err)
 		if err != nil {
@@ -168,7 +175,12 @@ func UnpublishHandler(store *store.Store) handleFunc {
 			}
 		} else {
 			// Form DATA from nginx-rtmp/srtrelay
-			app, name, _, err = handleNginxPublish(r)
+			app, name, _, action, err = handleNginxPublish(r)
+			log.Println("unpublish action", action)
+			// ignore actions except unpublish
+			if action != "unpublish" {
+				return
+			}
 		}
 
 		if err != nil {
