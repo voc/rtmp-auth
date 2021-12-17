@@ -1,5 +1,5 @@
 # parameters
-GOBUILD=go build
+GOBUILD=CGO_ENABLED=0 go build
 GOCLEAN=go clean
 PROTOC=protoc
 STATIK=statik
