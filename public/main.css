@@ -116,3 +116,17 @@ button.primary{
 		width: 70%;
 	}
 }
+
+/* un-flexbox the table */
+table {
+	min-width: 100%;
+	display: block;
+}
+
+table thead, table tbody {
+	display: table-row-group;
+}
+
+table tr {
+	display: table-row;
+}
