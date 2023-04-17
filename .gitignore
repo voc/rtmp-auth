@@ -3,4 +3,4 @@ statik.go
 storage.pb.go
 /rtmp-auth
 /gopath
-/.cache
+/gocache
