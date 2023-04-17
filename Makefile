@@ -1,5 +1,5 @@
 # parameters
-GOPATH ?= $(shell pwd)/gopath
+GOPATH = $(shell pwd)/gopath
 GOCACHE = $(shell pwd)/gocache
 GO = GOCACHE=$(GOCACHE) GOPATH=$(GOPATH) GO111MODULE=on go
 STATIK = $(GOPATH)/bin/statik
