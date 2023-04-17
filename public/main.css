@@ -48,25 +48,12 @@ body.crypto .generateKey {
 
 /* cleanup table entries */
 td[data-label='Auth'], th[data-label='Auth']{
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
 	white-space: nowrap;
-	flex: 1 50px !important;
 }
 
 td[data-label='Auth'] .authKey{
 	min-width: 110px;
-	flex: auto;
 	margin-left: auto;
-}
-
-td[data-label='Blocked'] {
-	line-height: 2.5;
-}
-
-td[data-label='Notes'], th[data-label='Notes']{
-	flex: 2 !important;
 }
 
 /* form */
@@ -118,15 +105,17 @@ button.primary{
 }
 
 /* un-flexbox the table */
-table {
-	min-width: 100%;
-	display: block;
-}
+@media screen and (min-width: 768px) {
+	table {
+		width: 100%;
+		display: block;
+	}
 
-table thead, table tbody {
-	display: table-row-group;
-}
+	table thead, table tbody {
+		display: table-row-group;
+	}
 
-table tr {
-	display: table-row;
+	table tr {
+		display: table-row;
+	}
 }
