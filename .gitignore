@@ -1,4 +1,6 @@
 store.db
-rtmp-auth
 statik.go
 storage.pb.go
+/rtmp-auth
+/gopath
+/.cache

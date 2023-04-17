@@ -20,6 +20,10 @@ table td::before {
 	margin-right: 1rem;
 }
 
+table td {
+	border-top-color: var(--table-border-separator-color);
+}
+
 button {
 	margin: calc(var(--universal-margin) / 2);
 }
@@ -44,21 +48,12 @@ body.crypto .generateKey {
 
 /* cleanup table entries */
 td[data-label='Auth'], th[data-label='Auth']{
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
 	white-space: nowrap;
-	flex: 1 50px !important;
 }
 
 td[data-label='Auth'] .authKey{
 	min-width: 110px;
-	flex: auto;
 	margin-left: auto;
-}
-
-td[data-label='Notes'], th[data-label='Notes']{
-	flex: 2 !important;
 }
 
 /* form */
@@ -106,5 +101,21 @@ button.primary{
 		min-width: 1000px;
 		max-width: 1400px;
 		width: 70%;
+	}
+}
+
+/* un-flexbox the table */
+@media screen and (min-width: 768px) {
+	table {
+		width: 100%;
+		display: block;
+	}
+
+	table thead, table tbody {
+		display: table-row-group;
+	}
+
+	table tr {
+		display: table-row;
 	}
 }

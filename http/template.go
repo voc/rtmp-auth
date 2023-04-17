@@ -1,11 +1,14 @@
-package main
+package http
 
 import (
 	"html/template"
+
+	"github.com/voc/rtmp-auth/storage"
 )
 
 type TemplateData struct {
-	Store        Store
+	State        *storage.State
+	Config       ServerConfig
 	CsrfTemplate template.HTML
 	Errors       []error
 }
@@ -17,12 +20,12 @@ var templates = template.Must(template.New("form.html").Parse(
   <meta charset="UTF-8">
   <title>RTMP Admin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" type="text/css" href="{{.Store.Prefix}}/public/mini-dark.css">
-  <link rel="stylesheet" type="text/css" href="{{.Store.Prefix}}/public/main.css">
+  <link rel="stylesheet" type="text/css" href="{{.Config.Prefix}}/public/mini-dark.css">
+  <link rel="stylesheet" type="text/css" href="{{.Config.Prefix}}/public/main.css">
 </head>
 <body>
   <div class="container">
-    <h1><a href="/">rtmp-auth</a></h1>
+    <h1><a href="{{$.Config.Prefix}}">rtmp-auth</a></h1>
     <h2>Streams</h2>
 
     <div class="row">
@@ -40,12 +43,13 @@ var templates = template.Must(template.New("form.html").Parse(
       <thead>
         <th>Name</th>
         <th data-label="Auth">Auth</th>
+        <th data-label="Blocked">Blocked</th>
         <th>Expires</th>
-		    <th data-label="Notes">Notes</th>
+        <th data-label="Notes">Notes</th>
         <th></th>
       </thead>
       <tbody>
-      {{range .Store.State.Streams}}
+      {{range .State.Streams}}
         <tr>
           <td data-label="Name">
             {{.Application}}/{{.Name}}
@@ -56,6 +60,14 @@ var templates = template.Must(template.New("form.html").Parse(
           <td data-label="Auth">
             <input class="authKey" size="5" value="{{.AuthKey}}" readonly/><button class="secondary copyToClipboard inputAddon">Copy</button>
           </td>
+          <td data-label="Blocked">
+            <form class="inline" action="{{$.Config.Prefix}}/block" method="POST" novalidate>
+              {{ $.CsrfTemplate }}
+              <input type="hidden" name="id" value="{{.Id}}">
+              <input type="hidden" name="blocked" value="{{.Blocked}}">
+              <input type="checkbox" oninput="this.form.submit();"{{if eq .Blocked true}} checked{{end}}>
+            </form>
+          </td>
           <td data-label="Expire" data-expire="{{.AuthExpire}}">
             {{if eq .AuthExpire -1}}
               never
@@ -65,7 +77,7 @@ var templates = template.Must(template.New("form.html").Parse(
           </td>
           <td data-label="Notes">{{.Notes}}</td>
           <td style="text-align:right;">
-            <form class="inline" action="{{$.Store.Prefix}}/remove" method="POST">
+            <form class="inline" action="{{$.Config.Prefix}}/remove" method="POST">
               {{ $.CsrfTemplate }}
               <input type="hidden" name="id" value="{{.Id}}">
               <button class="secondary">Remove</button>
@@ -77,12 +89,12 @@ var templates = template.Must(template.New("form.html").Parse(
     </table>
 
     <h2>Add Stream</h2>
-    <form class="addForm" action="{{$.Store.Prefix}}/add" method="POST" novalidate>
+    <form class="addForm" action="{{$.Config.Prefix}}/add" method="POST" novalidate>
       <div class="row">
         <div class="col-sm-12 col-md-6">
           <label for="application">Application</label>
           <select type="text" id="application" name="application">
-            {{range .Store.Applications}}
+            {{range $.Config.Applications}}
               <option value="{{.}}">{{.}}</option>
             {{end}}
           </select>
@@ -121,6 +133,6 @@ var templates = template.Must(template.New("form.html").Parse(
       </div>
     </form>
   </div>
-<script src="{{.Store.Prefix}}/public/main.js"></script>
+<script src="{{.Config.Prefix}}/public/main.js"></script>
 </body>
 </html>`))
