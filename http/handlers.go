@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"sort"
 	"strconv"
 	"time"
 
@@ -203,6 +204,11 @@ func FormHandler(store *store.Store, config ServerConfig) handleFunc {
 		if err != nil {
 			errs = append(errs, err)
 		}
+
+		sort.SliceStable(state.Streams, func(i, j int) bool {
+			return state.Streams[i].Name < state.Streams[j].Name
+		})
+
 		data := TemplateData{
 			State:        state,
 			Config:       config,
