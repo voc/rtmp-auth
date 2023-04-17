@@ -7,7 +7,7 @@ import (
 )
 
 type TemplateData struct {
-	State        storage.State
+	State        *storage.State
 	Config       ServerConfig
 	CsrfTemplate template.HTML
 	Errors       []error

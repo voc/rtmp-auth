@@ -15,11 +15,10 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type ConsulBackendConfig struct {
-}
+type ConsulBackendConfig struct{}
 
 type ConsulBackend struct {
-	cache     storage.State
+	cache     *storage.State
 	client    *api.Client
 	kv        *api.KV
 	lastIndex uint64
@@ -37,6 +36,7 @@ func NewConsulBackend(config ConsulBackendConfig) (Backend, error) {
 		client:    client,
 		kv:        client.KV(),
 		queryOpts: api.QueryOptions{},
+		cache:     &storage.State{},
 	}
 
 	// Generate secret
@@ -91,14 +91,14 @@ func (cb *ConsulBackend) handleWatch(b watch.BlockingParamVal, update interface{
 	}
 	cb.mutex.Lock()
 	defer cb.mutex.Unlock()
-	if err := proto.Unmarshal(pair.Value, &cb.cache); err != nil {
+	if err := proto.Unmarshal(pair.Value, cb.cache); err != nil {
 		log.Println("watch: failed to parse state: %w", err)
 	}
 	cb.lastIndex = pair.ModifyIndex
 }
 
 // Read directly from consul
-func (cb *ConsulBackend) read() (storage.State, error) {
+func (cb *ConsulBackend) read() (*storage.State, error) {
 	cb.mutex.Lock()
 	defer cb.mutex.Unlock()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -106,28 +106,33 @@ func (cb *ConsulBackend) read() (storage.State, error) {
 
 	pair, _, err := cb.kv.Get("stream_auth", cb.queryOpts.WithContext(ctx))
 	if err != nil {
-		return cb.cache, err
+		return cb.getCache(), err
 	}
 
 	if pair != nil {
-		if err := proto.Unmarshal(pair.Value, &cb.cache); err != nil {
-			return cb.cache, fmt.Errorf("failed to parse state: %w", err)
+		if err := proto.Unmarshal(pair.Value, cb.cache); err != nil {
+			return cb.getCache(), fmt.Errorf("failed to parse state: %w", err)
 		}
 		cb.lastIndex = pair.ModifyIndex
 	}
 
-	return cb.cache, nil
+	return cb.getCache(), nil
+}
+
+func (cb *ConsulBackend) getCache() *storage.State {
+	return proto.Clone(cb.cache).(*storage.State)
 }
 
 // Read from cache
-func (cb *ConsulBackend) cachedRead() (storage.State, error) {
+func (cb *ConsulBackend) cachedRead() (*storage.State, error) {
 	cb.mutex.RLock()
 	defer cb.mutex.RUnlock()
-	return cb.cache, nil
+	copy := proto.Clone(cb.cache).(*storage.State)
+	return copy, nil
 }
 
 // Read from backend
-func (cb *ConsulBackend) Read() (storage.State, error) {
+func (cb *ConsulBackend) Read() (*storage.State, error) {
 	if cb.lastIndex != 0 {
 		return cb.cachedRead()
 	}
@@ -135,14 +140,18 @@ func (cb *ConsulBackend) Read() (storage.State, error) {
 }
 
 // Write to consul KV
-func (cb *ConsulBackend) Write(state storage.State) error {
+func (cb *ConsulBackend) Write(state *storage.State) error {
+	if state == nil {
+		return errors.New("state should not be nil")
+	}
+
 	cb.mutex.Lock()
 	defer cb.mutex.Unlock()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
 	// marshal protobuf
-	res, err := proto.Marshal(&state)
+	res, err := proto.Marshal(state)
 	if err != nil {
 		return fmt.Errorf("marshal: %w", err)
 	}

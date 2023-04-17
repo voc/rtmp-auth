@@ -66,7 +66,7 @@ func (store *Store) Auth(app string, name string, auth string) (success bool, id
 				if stream.Active {
 					conflict = false
 				} else {
-					conflict = getAppNameActive(&state, app, name)
+					conflict = getAppNameActive(state, app, name)
 				}
 				return !conflict, stream.Id
 			} else {
@@ -210,6 +210,6 @@ func (store *Store) Expire() {
 	}
 }
 
-func (store *Store) Get() (storage.State, error) {
+func (store *Store) Get() (*storage.State, error) {
 	return store.backend.Read()
 }

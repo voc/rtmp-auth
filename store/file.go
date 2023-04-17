@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -20,19 +21,19 @@ type FileBackendConfig struct {
 // Applications: apps, Prefix: prefix
 type FileBackend struct {
 	path  string
-	cache storage.State
+	cache *storage.State
 	mutex sync.RWMutex
 }
 
 func NewFileBackend(config FileBackendConfig) (Backend, error) {
-	fb := &FileBackend{path: config.Path}
+	fb := &FileBackend{path: config.Path, cache: &storage.State{}}
 	state, err := fb.read()
 	if err != nil {
 		return nil, err
 	}
 	// persist state
 	fb.save(state)
-	fb.cache = *state
+	fb.cache = state
 	return fb, nil
 }
 
@@ -74,7 +75,7 @@ func (fb *FileBackend) save(state *storage.State) error {
 		return fmt.Errorf("failed to encode state: %w", err)
 	}
 	tmp := fmt.Sprintf(fb.path+".%v", time.Now())
-	if err := ioutil.WriteFile(tmp, out, 0600); err != nil {
+	if err := ioutil.WriteFile(tmp, out, 0o600); err != nil {
 		return fmt.Errorf("failed to write state: %w", err)
 	}
 	err = os.Rename(tmp, fb.path)
@@ -84,15 +85,19 @@ func (fb *FileBackend) save(state *storage.State) error {
 	return nil
 }
 
-func (fb *FileBackend) Read() (storage.State, error) {
+func (fb *FileBackend) Read() (*storage.State, error) {
 	fb.mutex.RLock()
 	defer fb.mutex.RUnlock()
-	return fb.cache, nil
+	res := proto.Clone(fb.cache).(*storage.State)
+	return res, nil
 }
 
-func (fb *FileBackend) Write(state storage.State) error {
+func (fb *FileBackend) Write(state *storage.State) error {
+	if state == nil {
+		return errors.New("state should not be nil")
+	}
 	fb.mutex.Lock()
 	defer fb.mutex.Unlock()
 	fb.cache = state
-	return fb.save(&state)
+	return fb.save(state)
 }
