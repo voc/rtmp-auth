@@ -1,4 +1,4 @@
-srtrelay (1.2.0) stable; urgency=medium
+rtmp-auth (1.2.0) stable; urgency=medium
 
   * various fixes
   * add support for SRS
