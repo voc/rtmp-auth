@@ -1,3 +1,4 @@
 store.db
 statik.go
 storage.pb.go
+/rtmp-auth
