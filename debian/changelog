@@ -1,3 +1,13 @@
+srtrelay (1.2.0) stable; urgency=medium
+
+  * various fixes
+  * add support for SRS
+  * always allow playback of all streams
+  * frontend: sort streams by name
+  * frontend: properly show long stream names
+
+ -- ischluff <ischluff@mailbox.org>  Mon, 17 Apr 2023 20:00:00 +0100
+
 rtmp-auth (0.1.0) buster; urgency=medium
 
   * Initial release.
