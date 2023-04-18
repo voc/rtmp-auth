@@ -75,7 +75,7 @@ func (fb *FileBackend) save(state *storage.State) error {
 		return fmt.Errorf("failed to encode state: %w", err)
 	}
 	tmp := fmt.Sprintf(fb.path+".%v", time.Now())
-	if err := ioutil.WriteFile(tmp, out, 0o600); err != nil {
+	if err := ioutil.WriteFile(tmp, out, 0600); err != nil {
 		return fmt.Errorf("failed to write state: %w", err)
 	}
 	err = os.Rename(tmp, fb.path)
