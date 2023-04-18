@@ -4,7 +4,7 @@ GOCACHE = $(shell pwd)/gocache
 GO = GOCACHE=$(GOCACHE) GOPATH=$(GOPATH) GO111MODULE=on go
 STATIK = $(GOPATH)/bin/statik
 PROTOC_GEN_GO = $(GOPATH)/bin/protoc-gen-go
-PROTOC = protoc
+PROTOC = PATH=$(PATH):$(GOPATH)/bin protoc
 BINARY_NAME = rtmp-auth
 
 PROTO_GENERATED=storage/storage.pb.go
