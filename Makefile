@@ -35,6 +35,9 @@ build: $(PROTO_GENERATED) $(STATIK_GENERATED)
 .PHONY: build
 
 clean:
+	$(GO) clean
+	rm -rf ./gopath
+	rm -rf ./gocache
 	rm -f $(BINARY_NAME)
 	rm -f $(PROTO_GENERATED)
 	rm -f $(STATIK_GENERATED)
