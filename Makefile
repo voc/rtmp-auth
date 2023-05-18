@@ -28,7 +28,7 @@ storage/storage.pb.go: storage/storage.proto | $(PROTOC_GEN_GO)
 $(STATIK_GENERATED): $(PUBLIC_FILES)
 	mkdir -p $(GOPATH)
 	$(GO) get -u github.com/rakyll/statik
-	$(GO) build -o $(GPATH)/bin/$(BINARY_NAME) $(GOPATH)/pkg/mod/github.com/rakyll/statik*/
+	$(GO) build -o $(STATIK) $(GOPATH)/pkg/mod/github.com/rakyll/statik*/
 	echo "$(PUBLIC_FILES)"
 	$(STATIK) -f -src=public/ -dest=.
 
