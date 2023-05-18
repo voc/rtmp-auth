@@ -1,7 +1,7 @@
 # parameters
 GOPATH = $(shell pwd)/gopath
 GOCACHE = $(shell pwd)/gocache
-GO = GOCACHE=$(GOCACHE) GOPATH=$(GOPATH) GO111MODULE=on $(shell pwd)/go/bin/go
+GO = GOCACHE=$(GOCACHE) GOPATH=$(GOPATH) GO111MODULE=on go
 STATIK = $(GOPATH)/bin/statik
 PROTOC_GEN_GO = $(GOPATH)/bin/protoc-gen-go
 PROTOC = PATH=$(PATH):/usr/bin protoc
