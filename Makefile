@@ -1,10 +1,10 @@
 # parameters
 GOPATH = $(shell pwd)/gopath
 GOCACHE = $(shell pwd)/gocache
-GO = GOCACHE=$(GOCACHE) GOPATH=$(GOPATH) GO111MODULE=on go
+GO = GOCACHE=$(GOCACHE) GOPATH=$(GOPATH) GO111MODULE=on $(shell pwd)/go/bin/go
 STATIK = $(GOPATH)/bin/statik
 PROTOC_GEN_GO = $(GOPATH)/bin/protoc-gen-go
-PROTOC = PATH=$(PATH):$(GOPATH)/bin protoc
+PROTOC = PATH=$(PATH):/usr/bin protoc
 BINARY_NAME = rtmp-auth
 
 PROTO_GENERATED=storage/storage.pb.go
@@ -16,6 +16,7 @@ PUBLIC_FILES=$(wildcard public/*)
 $(PROTOC_GEN_GO):
 	mkdir -p $(GOPATH)
 	$(GO) get -u github.com/golang/protobuf/protoc-gen-go
+	$(GO) build -o $(PROTOC_GEN_GO)
 
 storage/storage.pb.go: storage/storage.proto | $(PROTOC_GEN_GO)
 	@ if ! which protoc > /dev/null; then \
@@ -27,6 +28,7 @@ storage/storage.pb.go: storage/storage.proto | $(PROTOC_GEN_GO)
 $(STATIK_GENERATED): $(PUBLIC_FILES)
 	mkdir -p $(GOPATH)
 	$(GO) get -u github.com/rakyll/statik
+	$(GO) build -o ./gopath/bin/$(BINARY_NAME)
 	echo "$(PUBLIC_FILES)"
 	$(STATIK) -f -src=public/ -dest=.
 
