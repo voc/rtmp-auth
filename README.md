@@ -92,3 +92,19 @@ ffmpeg -i test.mp4 -c copy -f flv rtmp://server/app/stream?auth=foobar2342
 
 ```
 
+### Publishing with OBS
+When publishing using OBS, you do NOT want to tick `Use authentication` unless you've setup Basic Auth on your web server. `rtmp-auth` listens for the query parameter `auth`, so your OBS stream setup should be configured as follows.
+
+#### Server
+- `rtmp://<your_server_address>/<your_app_name>`: the same as the ffmpeg example. Use your server's address and the name of your rtmp app. For example: `rtmp://injest.mycoolapp.tv/live`
+
+#### Stream Key
+***Without auth***
+- `stream_name`: just put the stream name as your stream key. OBS will append this to your Server url and publish to it. Example OBS output: `rtmp://injest.mycoolapp.tv/live/stream`
+
+***With Auth***
+- `stream_name?auth=password`: same as the no-auth solution, just passing in our generated password as a query parameter. Since OBS appends this as well, you end up with the proper URL format still - `rtmp://injest.mycoolapp.tv/live/stream?auth=password`
+
+![Screenshot 2024-02-05 at 5 56 30 PM](https://github.com/voc/rtmp-auth/assets/24597186/f316bb3f-6151-49a5-87ba-228390e4df19)
+
+
