@@ -14,7 +14,6 @@ In the future I might also add support for removing active streams when they exp
 
 ## Build Dependencies
   * protoc with go-support
-  * statik ```go install github.com/rakyll/statik```
 
 ## Usage
 Build the daemon with

@@ -3,14 +3,13 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/pelletier/go-toml"
+	"github.com/pelletier/go-toml/v2"
 	"github.com/voc/rtmp-auth/http"
 	"github.com/voc/rtmp-auth/store"
 )
@@ -78,7 +77,7 @@ func main() {
 		config.HTTP.Prefix = *prefix
 	}
 
-	res, err := ioutil.ReadFile(*configPath)
+	res, err := os.ReadFile(*configPath)
 	if err != nil {
 		log.Fatal("read config", err)
 	}
