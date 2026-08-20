@@ -69,7 +69,7 @@ var templates = template.Must(template.New("form.html").Parse(
             </form>
           </td>
           <td data-label="Expire" data-expire="{{.AuthExpire}}">
-            {{if eq .AuthExpire -1 or eq .AuthExpire 0}}
+            {{if or (eq .AuthExpire -1) (eq .AuthExpire 0)}}
               never
             {{else}}
               {{.AuthExpire}}
