@@ -56,17 +56,6 @@ func (fb *FileBackend) read() (*storage.State, error) {
 		stream.Active = false
 	}
 
-	// Generate secret
-	if len(state.Secret) == 0 {
-		state.Secret, err = makeSecret()
-		if err != nil {
-			return nil, err
-		}
-		if err := fb.save(&state); err != nil {
-			return nil, fmt.Errorf("save state: %w", err)
-		}
-	}
-
 	log.Println("State restored from", fb.path)
 	return &state, nil
 }

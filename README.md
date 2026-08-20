@@ -79,6 +79,14 @@ You can visit http://localhost:8082 to add streams.
 
 For production usage you will want to deploy the frontend behind a Reverse-Proxy with TLS-support like nginx.
 
+### Consul migration
+To migrate a legacy Consul `stream_auth` state value to the per-stream schema, run:
+```bash
+make consul-migrate
+./consul-migrate
+```
+The tool uses the standard Consul client environment configuration, writes entries to `stream/<name>/auth`, and removes `stream_auth` only after all new values have been written.
+
 ### Publish a stream
 Now that you have set up your software you can start publishing streams
 

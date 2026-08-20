@@ -2,9 +2,11 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,11 +18,15 @@ import (
 
 type ConsulBackendConfig struct{}
 
+const (
+	consulStreamPrefix  = "stream/"
+	consulStreamAuthKey = "/auth"
+)
+
 type ConsulBackend struct {
 	cache     *storage.State
 	client    *api.Client
 	kv        *api.KV
-	lastIndex uint64
 	mutex     sync.RWMutex
 	queryOpts api.QueryOptions
 }
@@ -38,20 +44,9 @@ func NewConsulBackend(config ConsulBackendConfig) (Backend, error) {
 		cache:     &storage.State{},
 	}
 
-	// Generate secret
-	state, err := cb.Read()
+	_, err = cb.Read()
 	if err != nil {
 		return nil, err
-	}
-	if len(state.Secret) == 0 {
-		state.Secret, err = makeSecret()
-		if err != nil {
-			return nil, err
-		}
-		err = cb.Write(state)
-		if err != nil {
-			return nil, fmt.Errorf("write state: %w", err)
-		}
 	}
 
 	err = cb.watch()
@@ -62,11 +57,11 @@ func NewConsulBackend(config ConsulBackendConfig) (Backend, error) {
 	return cb, nil
 }
 
-// Watch watches the consul key for changes
+// Watch watches the consul stream keys for changes.
 func (cb *ConsulBackend) watch() error {
-	query := map[string]interface{}{
-		"type": "key",
-		"key":  "stream_auth",
+	query := map[string]any{
+		"type":   "keyprefix",
+		"prefix": consulStreamPrefix,
 	}
 	plan, err := watch.Parse(query)
 	if err != nil {
@@ -81,21 +76,20 @@ func (cb *ConsulBackend) watch() error {
 }
 
 // handleWatch updates the cache on consul changes
-func (cb *ConsulBackend) handleWatch(b watch.BlockingParamVal, update interface{}) {
-	pair, ok := update.(*api.KVPair)
+func (cb *ConsulBackend) handleWatch(b watch.BlockingParamVal, update any) {
+	pairs, ok := update.(api.KVPairs)
 	if !ok {
 		log.Println("watch: invalid update")
 		return
 	}
-	if pair == nil {
-		return
-	}
 	cb.mutex.Lock()
 	defer cb.mutex.Unlock()
-	if err := proto.Unmarshal(pair.Value, cb.cache); err != nil {
-		log.Println("watch: parse state: %w", err)
+	streams, err := streamsFromPairs(pairs)
+	if err != nil {
+		log.Printf("watch: parse streams: %v", err)
+		return
 	}
-	cb.lastIndex = pair.ModifyIndex
+	cb.cache.Streams = streams
 }
 
 // Read directly from consul
@@ -105,38 +99,24 @@ func (cb *ConsulBackend) read() (*storage.State, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	pair, _, err := cb.kv.Get("stream_auth", cb.queryOpts.WithContext(ctx))
+	pairs, _, err := cb.kv.List(consulStreamPrefix, cb.queryOpts.WithContext(ctx))
 	if err != nil {
 		return cb.getCache(), err
 	}
-
-	if pair != nil {
-		if err := proto.Unmarshal(pair.Value, cb.cache); err != nil {
-			return cb.getCache(), fmt.Errorf("parse state: %w", err)
-		}
-		cb.lastIndex = pair.ModifyIndex
+	streams, err := streamsFromPairs(pairs)
+	if err != nil {
+		return cb.getCache(), fmt.Errorf("parse stream auth: %w", err)
 	}
-
+	cb.cache.Streams = streams
 	return cb.getCache(), nil
 }
 
 func (cb *ConsulBackend) getCache() *storage.State {
-	return proto.Clone(cb.cache).(*storage.State)
-}
-
-// Read from cache
-func (cb *ConsulBackend) cachedRead() (*storage.State, error) {
-	cb.mutex.RLock()
-	defer cb.mutex.RUnlock()
-	copy := proto.Clone(cb.cache).(*storage.State)
-	return copy, nil
+	return cloneState(cb.cache)
 }
 
 // Read from backend
 func (cb *ConsulBackend) Read() (*storage.State, error) {
-	if cb.lastIndex != 0 {
-		return cb.cachedRead()
-	}
 	return cb.read()
 }
 
@@ -151,24 +131,68 @@ func (cb *ConsulBackend) Write(state *storage.State) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	// marshal protobuf
-	res, err := proto.Marshal(state)
-	if err != nil {
-		return fmt.Errorf("marshal: %w", err)
-	}
-
-	// put
-	p := &api.KVPair{Key: "stream_auth", Value: res, ModifyIndex: cb.lastIndex}
-	opts := api.WriteOptions{}
-	success, _, err := cb.kv.CAS(p, opts.WithContext(ctx))
+	pairs, _, err := cb.kv.List(consulStreamPrefix, cb.queryOpts.WithContext(ctx))
 	if err != nil {
 		return err
 	}
-	if !success {
-		return errors.New("state changed during request, please try again")
-	}
-	// update directly so cached reads can return a correct response
-	cb.cache = state
 
+	values, err := streamAuthValues(state.Streams)
+	if err != nil {
+		return err
+	}
+	operations := make([]*api.KVTxnOp, 0, len(values)+len(pairs))
+	for key, value := range values {
+		operations = append(operations, &api.KVTxnOp{Verb: api.KVSet, Key: key, Value: value})
+	}
+	for _, pair := range pairs {
+		if _, exists := values[pair.Key]; !exists {
+			operations = append(operations, &api.KVTxnOp{Verb: api.KVDelete, Key: pair.Key})
+		}
+	}
+
+	_, _, _, err = cb.kv.Txn(operations, cb.queryOpts.WithContext(ctx))
+	if err != nil {
+		return err
+	}
+	cb.cache = cloneState(state)
 	return nil
+}
+
+func streamAuthKey(name string) string {
+	return consulStreamPrefix + name + consulStreamAuthKey
+}
+
+func streamAuthValues(streams []*storage.Stream) (map[string][]byte, error) {
+	grouped := make(map[string][]*storage.Stream)
+	for _, stream := range streams {
+		grouped[streamAuthKey(stream.Name)] = append(grouped[streamAuthKey(stream.Name)], stream)
+	}
+	values := make(map[string][]byte, len(grouped))
+	for key, entries := range grouped {
+		value, err := json.Marshal(entries)
+		if err != nil {
+			return nil, fmt.Errorf("marshal %s: %w", key, err)
+		}
+		values[key] = value
+	}
+	return values, nil
+}
+
+func streamsFromPairs(pairs api.KVPairs) ([]*storage.Stream, error) {
+	var streams []*storage.Stream
+	for _, pair := range pairs {
+		if !strings.HasSuffix(pair.Key, consulStreamAuthKey) {
+			continue
+		}
+		var entries []*storage.Stream
+		if err := json.Unmarshal(pair.Value, &entries); err != nil {
+			return nil, fmt.Errorf("unmarshal %s: %w", pair.Key, err)
+		}
+		streams = append(streams, entries...)
+	}
+	return streams, nil
+}
+
+func cloneState(state *storage.State) *storage.State {
+	return proto.Clone(state).(*storage.State)
 }

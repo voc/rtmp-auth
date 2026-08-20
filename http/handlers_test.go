@@ -31,7 +31,6 @@ func addTestStream(t *testing.T, streamStore *store.Store) {
 		Application: "live",
 		Name:        "camera",
 		AuthKey:     "secret",
-		AuthExpire:  -1,
 	})
 	if err != nil {
 		t.Fatalf("add stream: %v", err)

@@ -1,19 +1,20 @@
 syntax = "proto3";
 package storage;
+
 option go_package = "github.com/voc/rtmp-auth/storage";
 
 message State {
-    repeated Stream streams = 1;
-    bytes secret = 2;
+  repeated Stream streams = 1;
+  reserved 2;
 }
 
 message Stream {
-    string name = 1;
-    bool active = 2;
-    string application = 3;
-    string auth_key = 4;
-    int64 auth_expire = 5;
-    string id = 6;
-    string notes = 7;
-    bool blocked = 8;
+  string name = 1;
+  bool active = 2;
+  string application = 3;
+  string auth_key = 4;
+  int64 auth_expire = 5;
+  string id = 6;
+  string notes = 7;
+  bool blocked = 8;
 }

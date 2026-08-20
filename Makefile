@@ -17,6 +17,10 @@ build: proto
 	$(GO) build -o $(BINARY_NAME) ./cmd/rtmp-auth
 .PHONY: build
 
+consul-migrate: proto
+	$(GO) build -o consul-migrate ./cmd/consul-migrate
+.PHONY: consul-migrate
+
 $(PROTOC_GEN_GO): go.sum
 	$(GO) install -buildvcs=false google.golang.org/protobuf/cmd/protoc-gen-go
 

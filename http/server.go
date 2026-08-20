@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"crypto/rand"
 	"log"
 	"sync"
 	"time"
@@ -26,10 +27,11 @@ type Frontend struct {
 }
 
 func NewFrontend(address string, config ServerConfig, store *store.Store) *Frontend {
-	state, err := store.Get()
-	if err != nil {
-		log.Fatal("get", err)
+	secret := make([]byte, 32)
+	if _, err := rand.Read(secret); err != nil {
+		log.Fatal("generate CSRF secret", err)
 	}
+
 	router := mux.NewRouter()
 	sub := router.PathPrefix(config.Prefix).Subrouter()
 	sub.Path("/").Methods("GET").HandlerFunc(FormHandler(store, config))
@@ -38,7 +40,7 @@ func NewFrontend(address string, config ServerConfig, store *store.Store) *Front
 	sub.Path("/block").Methods("POST").HandlerFunc(BlockHandler(store, config))
 	sub.PathPrefix("/public/").Handler(
 		http.StripPrefix(config.Prefix+"/public/", http.FileServer(http.FS(public.FS))))
-	CSRF := csrf.Protect(state.Secret, csrf.Secure(!config.Insecure))
+	CSRF := csrf.Protect(secret, csrf.Secure(!config.Insecure))
 	csrfHandler := CSRF(router)
 	var handler http.Handler = csrfHandler
 	if config.Insecure {

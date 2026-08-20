@@ -61,7 +61,7 @@ func (store *Store) Auth(app string, name string, auth string) (success bool, id
 	}
 
 	for _, stream := range state.Streams {
-		if stream.Application != app || stream.Name != name || stream.AuthKey != auth {
+		if (stream.Application != "" && stream.Application != app) || stream.Name != name || stream.AuthKey != auth {
 			continue
 		}
 		if stream.Blocked {
@@ -192,7 +192,7 @@ func (store *Store) Expire() {
 	}
 
 	for _, stream := range state.Streams {
-		if stream.AuthExpire != -1 && stream.AuthExpire < now {
+		if stream.AuthExpire != -1 && stream.AuthExpire != 0 && stream.AuthExpire < now {
 			log.Printf("Expiring %s/%s\n", stream.Application, stream.Name)
 			toDelete = append(toDelete, stream.Id)
 		}

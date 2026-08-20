@@ -33,7 +33,7 @@ func parseDurationPart(value string, unit time.Duration) time.Duration {
 func parseExpiry(str string) *int64 {
 	// Allow empty string for "never"
 	if str == "" {
-		never := int64(-1)
+		never := int64(0)
 		return &never
 	}
 
@@ -137,7 +137,6 @@ func PublishHandler(store *store.Store) handleFunc {
 				return
 			}
 		}
-		log.Println(app, name, auth, err)
 		if err != nil {
 			log.Println("Failed to parse publish data:", err)
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
