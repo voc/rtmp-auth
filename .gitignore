@@ -1,3 +1,5 @@
+.direnv
 store.db
 storage.pb.go
 /rtmp-auth
+/result

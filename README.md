@@ -82,8 +82,8 @@ For production usage you will want to deploy the frontend behind a Reverse-Proxy
 ### Consul migration
 To migrate a legacy Consul `stream_auth` state value to the per-stream schema, run:
 ```bash
-make consul-migrate
-./consul-migrate
+make auth-consul-migrate
+./auth-consul-migrate
 ```
 The tool uses the standard Consul client environment configuration, writes entries to `stream/<name>/auth`, and removes `stream_auth` only after all new values have been written.
 

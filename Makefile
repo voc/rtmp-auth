@@ -1,7 +1,6 @@
 # parameters
 GO = go
 GOPATH ?= $(shell go env GOPATH)
-PROTOC_GEN_GO = $(GOPATH)/bin/protoc-gen-go
 PROTOC = PATH=$(PATH):$(GOPATH)/bin protoc
 BINARY_NAME = rtmp-auth
 
@@ -17,17 +16,14 @@ build: proto
 	$(GO) build -o $(BINARY_NAME) ./cmd/rtmp-auth
 .PHONY: build
 
-consul-migrate: proto
-	$(GO) build -o consul-migrate ./cmd/consul-migrate
-.PHONY: consul-migrate
-
-$(PROTOC_GEN_GO): go.sum
-	$(GO) install -buildvcs=false google.golang.org/protobuf/cmd/protoc-gen-go
+auth-consul-migrate: proto
+	$(GO) build -o auth-consul-migrate ./cmd/auth-consul-migrate
+.PHONY: auth-consul-migrate
 
 proto: $(PROTO_GENERATED)
 .PHONY: proto
 
-$(PROTO_GENERATED): $(PROTO_SRC) | $(PROTOC_GEN_GO)
+$(PROTO_GENERATED): $(PROTO_SRC)
 	@ if ! which protoc > /dev/null; then \
 		echo "error: protoc not installed" >&2; \
 		exit 1; \
