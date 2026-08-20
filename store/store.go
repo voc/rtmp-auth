@@ -3,6 +3,7 @@ package store
 import (
 	"fmt"
 	"log"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -29,7 +30,7 @@ func NewStore(config StoreConfig) (*Store, error) {
 	case "consul":
 		backend, err = NewConsulBackend(config.Consul)
 	default:
-		err = fmt.Errorf("Unknown backend %s", config.Backend)
+		err = fmt.Errorf("unknown backend %s", config.Backend)
 	}
 	if err != nil {
 		return nil, err
@@ -165,26 +166,18 @@ func (store *Store) RemoveStream(id string) error {
 		return err
 	}
 	s := state.Streams
-	found := false
 	var index int
 	var stream *storage.Stream
 	for index, stream = range s {
 		if stream.Id == id {
-			found = true
+			state.Streams = slices.Delete(s, index, index+1)
+
+			if err := store.backend.Write(state); err != nil {
+				return err
+			}
 			break
 		}
 	}
-
-	if found {
-		copy(s[index:], s[index+1:]) // Shift a[i+1:] left one index
-		s[len(s)-1] = nil            // Erase last element (write zero value)
-		state.Streams = s[:len(s)-1] // Truncate slice
-	}
-
-	if err := store.backend.Write(state); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -206,7 +199,9 @@ func (store *Store) Expire() {
 	}
 
 	for _, id := range toDelete {
-		store.RemoveStream(id)
+		if err := store.RemoveStream(id); err != nil {
+			log.Println("remove stream", err)
+		}
 	}
 }
 

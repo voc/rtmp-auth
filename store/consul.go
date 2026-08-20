@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math/rand"
 	"sync"
 	"time"
 
@@ -45,11 +44,13 @@ func NewConsulBackend(config ConsulBackendConfig) (Backend, error) {
 		return nil, err
 	}
 	if len(state.Secret) == 0 {
-		state.Secret = make([]byte, 32)
-		rand.Read(state.Secret)
-		err := cb.Write(state)
+		state.Secret, err = makeSecret()
 		if err != nil {
 			return nil, err
+		}
+		err = cb.Write(state)
+		if err != nil {
+			return nil, fmt.Errorf("write state: %w", err)
 		}
 	}
 
@@ -92,7 +93,7 @@ func (cb *ConsulBackend) handleWatch(b watch.BlockingParamVal, update interface{
 	cb.mutex.Lock()
 	defer cb.mutex.Unlock()
 	if err := proto.Unmarshal(pair.Value, cb.cache); err != nil {
-		log.Println("watch: failed to parse state: %w", err)
+		log.Println("watch: parse state: %w", err)
 	}
 	cb.lastIndex = pair.ModifyIndex
 }
@@ -111,7 +112,7 @@ func (cb *ConsulBackend) read() (*storage.State, error) {
 
 	if pair != nil {
 		if err := proto.Unmarshal(pair.Value, cb.cache); err != nil {
-			return cb.getCache(), fmt.Errorf("failed to parse state: %w", err)
+			return cb.getCache(), fmt.Errorf("parse state: %w", err)
 		}
 		cb.lastIndex = pair.ModifyIndex
 	}

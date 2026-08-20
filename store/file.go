@@ -3,9 +3,7 @@ package store
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"math/rand"
 	"os"
 	"sync"
 	"time"
@@ -18,7 +16,6 @@ type FileBackendConfig struct {
 	Path string
 }
 
-// Applications: apps, Prefix: prefix
 type FileBackend struct {
 	path  string
 	cache *storage.State
@@ -32,7 +29,9 @@ func NewFileBackend(config FileBackendConfig) (Backend, error) {
 		return nil, err
 	}
 	// persist state
-	fb.save(state)
+	if err := fb.save(state); err != nil {
+		return nil, fmt.Errorf("save state: %w", err)
+	}
 	fb.cache = state
 	return fb, nil
 }
@@ -41,7 +40,7 @@ func NewFileBackend(config FileBackendConfig) (Backend, error) {
 func (fb *FileBackend) read() (*storage.State, error) {
 	var state storage.State
 
-	data, err := ioutil.ReadFile(fb.path)
+	data, err := os.ReadFile(fb.path)
 	// Non-existing state is ok
 	if err != nil && !os.IsNotExist(err) {
 		return nil, fmt.Errorf("no previous file read: %w", err)
@@ -59,9 +58,13 @@ func (fb *FileBackend) read() (*storage.State, error) {
 
 	// Generate secret
 	if len(state.Secret) == 0 {
-		state.Secret = make([]byte, 32)
-		rand.Read(state.Secret)
-		fb.save(&state)
+		state.Secret, err = makeSecret()
+		if err != nil {
+			return nil, err
+		}
+		if err := fb.save(&state); err != nil {
+			return nil, fmt.Errorf("save state: %w", err)
+		}
 	}
 
 	log.Println("State restored from", fb.path)
@@ -72,15 +75,15 @@ func (fb *FileBackend) read() (*storage.State, error) {
 func (fb *FileBackend) save(state *storage.State) error {
 	out, err := proto.Marshal(state)
 	if err != nil {
-		return fmt.Errorf("failed to encode state: %w", err)
+		return fmt.Errorf("encode state: %w", err)
 	}
 	tmp := fmt.Sprintf(fb.path+".%v", time.Now())
-	if err := ioutil.WriteFile(tmp, out, 0o600); err != nil {
-		return fmt.Errorf("failed to write state: %w", err)
+	if err := os.WriteFile(tmp, out, 0o600); err != nil {
+		return fmt.Errorf("write state: %w", err)
 	}
 	err = os.Rename(tmp, fb.path)
 	if err != nil {
-		return fmt.Errorf("failed to move state: %w", err)
+		return fmt.Errorf("move state: %w", err)
 	}
 	return nil
 }
