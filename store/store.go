@@ -61,19 +61,16 @@ func (store *Store) Auth(app string, name string, auth string) (success bool, id
 	}
 
 	for _, stream := range state.Streams {
-		if stream.Application == app && stream.Name == name && stream.AuthKey == auth {
-			if !stream.Blocked {
-				var conflict bool
-				if stream.Active {
-					conflict = false
-				} else {
-					conflict = getAppNameActive(state, app, name)
-				}
-				return !conflict, stream.Id
-			} else {
-				return false, stream.Id
-			}
+		if stream.Application != app || stream.Name != name || stream.AuthKey != auth {
+			continue
 		}
+		if stream.Blocked {
+			return false, stream.Id
+		}
+		if !stream.Active && getAppNameActive(state, app, name) {
+			return false, stream.Id
+		}
+		return true, stream.Id
 	}
 	return false, ""
 }
@@ -87,13 +84,14 @@ func (store *Store) SetActive(id string) bool {
 
 	success := false
 	for _, stream := range state.Streams {
-		if stream.Id == id {
-			stream.Active = true
-			if err := store.backend.Write(state); err != nil {
-				log.Println(err)
-			} else {
-				success = true
-			}
+		if stream.Id != id {
+			continue
+		}
+		stream.Active = true
+		if err := store.backend.Write(state); err != nil {
+			log.Println(err)
+		} else {
+			success = true
 		}
 	}
 	return success
@@ -108,13 +106,14 @@ func (store *Store) SetInactive(app string, name string) bool {
 
 	success := false
 	for _, stream := range state.Streams {
-		if stream.Application == app && stream.Name == name {
-			stream.Active = false
-			if err := store.backend.Write(state); err != nil {
-				log.Println(err)
-			} else {
-				success = true
-			}
+		if stream.Application != app || stream.Name != name {
+			continue
+		}
+		stream.Active = false
+		if err := store.backend.Write(state); err != nil {
+			log.Println(err)
+		} else {
+			success = true
 		}
 	}
 	return success
@@ -169,14 +168,15 @@ func (store *Store) RemoveStream(id string) error {
 	var index int
 	var stream *storage.Stream
 	for index, stream = range s {
-		if stream.Id == id {
-			state.Streams = slices.Delete(s, index, index+1)
-
-			if err := store.backend.Write(state); err != nil {
-				return err
-			}
-			break
+		if stream.Id != id {
+			continue
 		}
+		state.Streams = slices.Delete(s, index, index+1)
+
+		if err := store.backend.Write(state); err != nil {
+			return err
+		}
+		break
 	}
 	return nil
 }
