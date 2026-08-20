@@ -30,7 +30,6 @@ func NewFrontend(address string, config ServerConfig, store *store.Store) *Front
 	if err != nil {
 		log.Fatal("get", err)
 	}
-	CSRF := csrf.Protect(state.Secret, csrf.Secure(!config.Insecure))
 	router := mux.NewRouter()
 	sub := router.PathPrefix(config.Prefix).Subrouter()
 	sub.Path("/").Methods("GET").HandlerFunc(FormHandler(store, config))
@@ -39,10 +38,18 @@ func NewFrontend(address string, config ServerConfig, store *store.Store) *Front
 	sub.Path("/block").Methods("POST").HandlerFunc(BlockHandler(store, config))
 	sub.PathPrefix("/public/").Handler(
 		http.StripPrefix(config.Prefix+"/public/", http.FileServer(http.FS(public.FS))))
+	CSRF := csrf.Protect(state.Secret, csrf.Secure(!config.Insecure))
+	csrfHandler := CSRF(router)
+	var handler http.Handler = csrfHandler
+	if config.Insecure {
+		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			csrfHandler.ServeHTTP(w, csrf.PlaintextHTTPRequest(r))
+		})
+	}
 
 	frontend := &Frontend{
 		server: &http.Server{
-			Handler:      CSRF(router),
+			Handler:      handler,
 			Addr:         address,
 			WriteTimeout: 15 * time.Second,
 			ReadTimeout:  15 * time.Second,
