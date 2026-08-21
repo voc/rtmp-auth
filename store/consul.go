@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -120,52 +119,68 @@ func (cb *ConsulBackend) Read() (*storage.State, error) {
 	return cb.read()
 }
 
-// Write to consul KV
-func (cb *ConsulBackend) Write(state *storage.State) error {
-	if state == nil {
-		return errors.New("state should not be nil")
-	}
-
+// UpdateAuth writes all auth entries for one stream name to consul KV.
+func (cb *ConsulBackend) UpdateAuth(stream *storage.Stream) error {
 	cb.mutex.Lock()
 	defer cb.mutex.Unlock()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	pairs, _, err := cb.kv.List(consulStreamPrefix, cb.queryOpts.WithContext(ctx))
-	if err != nil {
-		return err
-	}
-
-	values, err := streamAuthValues(state.Streams)
-	if err != nil {
-		return err
-	}
-	operations := make([]*api.KVTxnOp, 0, len(values)+len(pairs))
-	for key, value := range values {
-		operations = append(operations, &api.KVTxnOp{Verb: api.KVSet, Key: key, Value: value})
-	}
-	for _, pair := range pairs {
-		if _, exists := values[pair.Key]; !exists {
-			operations = append(operations, &api.KVTxnOp{Verb: api.KVDelete, Key: pair.Key})
+	cb.cache.Streams = replaceStreamAuth(cb.cache.Streams, stream.Id, stream)
+	var authForStream []*storage.Stream
+	for _, s := range cb.cache.Streams {
+		if s.Name == stream.Name {
+			authForStream = append(authForStream, s)
 		}
 	}
-
-	_, _, _, err = cb.kv.Txn(operations, cb.queryOpts.WithContext(ctx))
+	value, err := json.Marshal(authForStream)
 	if err != nil {
 		return err
 	}
-	cb.cache = cloneState(state)
+	if _, err := cb.kv.Put(&api.KVPair{Key: consulAuthPath(stream.Name), Value: value}, (&api.WriteOptions{}).WithContext(ctx)); err != nil {
+		return err
+	}
 	return nil
 }
 
-func streamAuthKey(name string) string {
-	return consulStreamPrefix + name + consulStreamAuthKey
+// RemoveAuth removes all auth entries for one stream name from consul KV.
+func (cb *ConsulBackend) RemoveAuth(stream *storage.Stream) error {
+	cb.mutex.Lock()
+	defer cb.mutex.Unlock()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	cb.cache.Streams = replaceStreamAuth(cb.cache.Streams, stream.Id, nil)
+	var authForStream []*storage.Stream
+	for _, s := range cb.cache.Streams {
+		if s.Name == stream.Name {
+			authForStream = append(authForStream, s)
+		}
+	}
+	if len(authForStream) > 0 {
+		value, err := json.Marshal(authForStream)
+		if err != nil {
+			return err
+		}
+		if _, err := cb.kv.Put(&api.KVPair{Key: consulAuthPath(stream.Name), Value: value}, (&api.WriteOptions{}).WithContext(ctx)); err != nil {
+			return err
+		}
+	} else {
+		if _, err := cb.kv.Delete(consulAuthPath(stream.Name), (&api.WriteOptions{}).WithContext(ctx)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func consulAuthPath(streamName string) string {
+	return consulStreamPrefix + streamName + consulStreamAuthKey
 }
 
 func streamAuthValues(streams []*storage.Stream) (map[string][]byte, error) {
 	grouped := make(map[string][]*storage.Stream)
 	for _, stream := range streams {
-		grouped[streamAuthKey(stream.Name)] = append(grouped[streamAuthKey(stream.Name)], stream)
+		grouped[consulAuthPath(stream.Name)] = append(grouped[consulAuthPath(stream.Name)], stream)
 	}
 	values := make(map[string][]byte, len(grouped))
 	for key, entries := range grouped {

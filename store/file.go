@@ -1,7 +1,6 @@
 package store
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -84,12 +83,16 @@ func (fb *FileBackend) Read() (*storage.State, error) {
 	return res, nil
 }
 
-func (fb *FileBackend) Write(state *storage.State) error {
-	if state == nil {
-		return errors.New("state should not be nil")
-	}
+func (fb *FileBackend) UpdateAuth(stream *storage.Stream) error {
 	fb.mutex.Lock()
 	defer fb.mutex.Unlock()
-	fb.cache = state
-	return fb.save(state)
+	fb.cache.Streams = replaceStreamAuth(fb.cache.Streams, stream.Id, stream)
+	return fb.save(fb.cache)
+}
+
+func (fb *FileBackend) RemoveAuth(stream *storage.Stream) error {
+	fb.mutex.Lock()
+	defer fb.mutex.Unlock()
+	fb.cache.Streams = replaceStreamAuth(fb.cache.Streams, stream.Id, nil)
+	return fb.save(fb.cache)
 }

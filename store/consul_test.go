@@ -27,8 +27,8 @@ func TestStreamAuthValuesGroupsEntriesByName(t *testing.T) {
 	if err := json.Unmarshal(camera, &entries); err != nil {
 		t.Fatalf("decode camera auth: %v", err)
 	}
-	if len(entries) != 2 {
-		t.Fatalf("camera entries = %d, want 2", len(entries))
+	if len(entries) != 2 || entries[0].Id != "first" || entries[1].Id != "second" {
+		t.Fatalf("camera entries = %#v, want first and second", entries)
 	}
 	if _, ok := values["stream/desk/auth"]; !ok {
 		t.Fatal("missing stream/desk/auth")
@@ -69,7 +69,7 @@ func TestLegacyStreamAuthValues(t *testing.T) {
 	if err := json.Unmarshal(camera, &entries); err != nil {
 		t.Fatalf("decode camera auth: %v", err)
 	}
-	if len(entries) != 2 {
-		t.Fatalf("camera entries = %d, want 2", len(entries))
+	if len(entries) != 2 || entries[0].Id != "first" || entries[1].Id != "second" {
+		t.Fatalf("camera entries = %#v, want first and second", entries)
 	}
 }

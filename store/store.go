@@ -3,10 +3,7 @@ package store
 import (
 	"fmt"
 	"log"
-	"slices"
 	"time"
-
-	"github.com/google/uuid"
 
 	"github.com/voc/rtmp-auth/storage"
 )
@@ -88,7 +85,7 @@ func (store *Store) SetActive(id string) bool {
 			continue
 		}
 		stream.Active = true
-		if err := store.backend.Write(state); err != nil {
+		if err := store.backend.UpdateAuth(stream); err != nil {
 			log.Println(err)
 		} else {
 			success = true
@@ -110,11 +107,11 @@ func (store *Store) SetInactive(app string, name string) bool {
 			continue
 		}
 		stream.Active = false
-		if err := store.backend.Write(state); err != nil {
+		if err := store.backend.UpdateAuth(stream); err != nil {
 			log.Println(err)
-		} else {
-			success = true
+			return false
 		}
+		success = true
 	}
 	return success
 }
@@ -129,7 +126,7 @@ func (store *Store) SetBlocked(id string, isBlocked bool) error {
 	for _, stream := range state.Streams {
 		if stream.Id == id {
 			stream.Blocked = isBlocked
-			if err := store.backend.Write(state); err != nil {
+			if err := store.backend.UpdateAuth(stream); err != nil {
 				return err
 			}
 			return nil
@@ -139,20 +136,10 @@ func (store *Store) SetBlocked(id string, isBlocked bool) error {
 }
 
 func (store *Store) AddStream(stream *storage.Stream) error {
-	id, err := uuid.NewUUID()
-	if err != nil {
+	if err := ensureStreamID(stream); err != nil {
 		return err
 	}
-
-	stream.Id = id.String()
-	stream.Blocked = false
-	state, err := store.backend.Read()
-	if err != nil {
-		return err
-	}
-	state.Streams = append(state.Streams, stream)
-
-	if err := store.backend.Write(state); err != nil {
+	if err := store.backend.UpdateAuth(stream); err != nil {
 		return err
 	}
 
@@ -164,16 +151,11 @@ func (store *Store) RemoveStream(id string) error {
 	if err != nil {
 		return err
 	}
-	s := state.Streams
-	var index int
-	var stream *storage.Stream
-	for index, stream = range s {
+	for _, stream := range state.Streams {
 		if stream.Id != id {
 			continue
 		}
-		state.Streams = slices.Delete(s, index, index+1)
-
-		if err := store.backend.Write(state); err != nil {
+		if err := store.backend.RemoveAuth(stream); err != nil {
 			return err
 		}
 		break
