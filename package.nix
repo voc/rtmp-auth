@@ -11,7 +11,7 @@ buildGoModule rec {
   version = "1.3.0";
   src = ./.;
 
-  vendorHash = "sha256-9QW9N/LxQ7sVlw2JnDlBJemFtFGezAFdnupJNbSWKn4=";
+  vendorHash = "sha256-abIDkZRN3yy0l0BuZ8Y3PcKQbjqnagYcpgXU3QFaONs=";
 
   subPackages = [
     "cmd/rtmp-auth"
