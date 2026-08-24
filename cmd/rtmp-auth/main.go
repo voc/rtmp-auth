@@ -91,7 +91,7 @@ func main() {
 
 	store, err := store.NewStore(config.Store)
 	if err != nil {
-		log.Fatal("Failed to create store", err)
+		log.Fatalf("Failed to create store: %s", err)
 	}
 
 	// Set up servers

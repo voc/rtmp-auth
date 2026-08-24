@@ -87,6 +87,7 @@ func NewAPI(address string, config ServerConfig, store *store.Store) *API {
 	router := mux.NewRouter()
 	router.Path("/publish").Methods("POST").HandlerFunc(PublishHandler(store))
 	router.Path("/unpublish").Methods("POST").HandlerFunc(UnpublishHandler(store))
+	router.Path("/auth").Methods("POST").HandlerFunc(AuthHandler(store))
 
 	api := &API{
 		server: &http.Server{

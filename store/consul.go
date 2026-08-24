@@ -34,7 +34,7 @@ func NewConsulBackend(config ConsulBackendConfig) (Backend, error) {
 	// Get a new client
 	client, err := api.NewClient(api.DefaultConfig())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new client: %w", err)
 	}
 	cb := &ConsulBackend{
 		client:    client,
@@ -45,7 +45,7 @@ func NewConsulBackend(config ConsulBackendConfig) (Backend, error) {
 
 	_, err = cb.Read()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read: %w", err)
 	}
 
 	err = cb.watch()

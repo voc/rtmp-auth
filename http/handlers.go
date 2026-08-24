@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/csrf"
@@ -344,5 +345,59 @@ func BlockHandler(store *store.Store, config ServerConfig) handleFunc {
 		} else {
 			http.Redirect(w, r, config.Prefix, http.StatusSeeOther)
 		}
+	}
+}
+
+type AuthRequest struct {
+	User      string `json:"user"`
+	Password  string `json:"password"`
+	Token     string `json:"token"`
+	IP        string `json:"ip"`
+	Action    string `json:"action"`
+	Path      string `json:"path"`
+	Protocol  string `json:"protocol"`
+	Id        string `json:"id"`
+	Query     string `json:"query"`
+	UserAgent string `json:"userAgent"`
+}
+
+// mediamtx auth handler
+func AuthHandler(store *store.Store) handleFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var authRequest AuthRequest
+		err := json.NewDecoder(r.Body).Decode(&authRequest)
+		if err != nil {
+			http.Error(w, "400 Bad Request", http.StatusBadRequest)
+			return
+		}
+
+		if authRequest.Action != "publish" {
+			return
+		}
+
+		parts := strings.Split(authRequest.Path, "/")
+		if len(parts) > 2 {
+			http.Error(w, "400 Bad Request", http.StatusBadRequest)
+			return
+		}
+		var application string
+		var name string
+		if len(parts) == 2 {
+			application = parts[0]
+			name = parts[1]
+		} else {
+			application = "stream"
+			name = parts[0]
+		}
+
+		query, _ := url.ParseQuery(authRequest.Query)
+		success, id := store.Auth(application, name, query.Get("auth"))
+		if !success {
+			log.Printf("Publish %s/%s unauthorized\n", application, name)
+			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		log.Printf("Publish %s %s/%s ok\n", id, application, name)
 	}
 }
