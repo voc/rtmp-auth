@@ -36,3 +36,8 @@ clean:
 	rm -f $(PROTO_GENERATED)
 .PHONY: clean
 
+lint:
+	golangci-lint run ./...
+
+test:
+	go test ./...

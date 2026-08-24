@@ -7,10 +7,9 @@ import (
 )
 
 type TemplateData struct {
-	State        *storage.State
-	Config       ServerConfig
-	CsrfTemplate template.HTML
-	Errors       []error
+	State  *storage.State
+	Config ServerConfig
+	Errors []error
 }
 
 var templates = template.Must(template.New("form.html").Parse(
@@ -62,7 +61,6 @@ var templates = template.Must(template.New("form.html").Parse(
           </td>
           <td data-label="Blocked">
             <form class="inline" action="{{$.Config.Prefix}}/block" method="POST" novalidate>
-              {{ $.CsrfTemplate }}
               <input type="hidden" name="id" value="{{.Id}}">
               <input type="hidden" name="blocked" value="{{.Blocked}}">
               <input type="checkbox" oninput="this.form.submit();"{{if eq .Blocked true}} checked{{end}}>
@@ -78,7 +76,6 @@ var templates = template.Must(template.New("form.html").Parse(
           <td data-label="Notes">{{.Notes}}</td>
           <td style="text-align:right;">
             <form class="inline" action="{{$.Config.Prefix}}/remove" method="POST">
-              {{ $.CsrfTemplate }}
               <input type="hidden" name="id" value="{{.Id}}">
               <button class="secondary">Remove</button>
             </form>
@@ -126,7 +123,6 @@ var templates = template.Must(template.New("form.html").Parse(
       </div>
 
       <div class="row">
-        {{ .CsrfTemplate }}
         <div class="col-sm-12 col-md-12">
           <button class="primary">Submit</button>
         </div>

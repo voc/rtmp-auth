@@ -26,10 +26,11 @@
         in
         {
           default = pkgs.mkShell {
-            packages = [
-              pkgs.go
-              pkgs.protobuf
-              pkgs.protoc-gen-go
+            packages = with pkgs; [
+              go
+              protobuf
+              protoc-gen-go
+              golangci-lint
             ];
           };
         });

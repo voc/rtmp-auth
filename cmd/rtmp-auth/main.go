@@ -60,7 +60,6 @@ func main() {
 	var configPath = flag.String("config", "config.toml", "Config toml")
 	var apiAddr = flag.String("apiAddr", "", "API bind address")
 	var frontendAddr = flag.String("frontendAddr", "", "Frontend bind address")
-	var insecure = flag.Bool("insecure", false, "Set to allow non-secure CSRF cookie")
 	var prefix = flag.String("subpath", "", "Set to allow running behind reverse-proxy at that subpath")
 	flag.Parse()
 
@@ -69,9 +68,6 @@ func main() {
 	}
 	if *frontendAddr != "" {
 		config.FrontendAddress = *frontendAddr
-	}
-	if *insecure {
-		config.HTTP.Insecure = true
 	}
 	if *prefix != "" {
 		config.HTTP.Prefix = *prefix

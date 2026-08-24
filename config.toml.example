@@ -5,9 +5,6 @@ applications = ["stream"]
 # Path prefix to allow frontend to run on a subpath
 #prefix = ""
 
-# Allow CSRF cookie to be sent across http-connection, not recommended for production
-#insecure = false
-
 [store]
 # Set store backend (file|consul)
 #backend = "file"

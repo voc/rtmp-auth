@@ -2,15 +2,12 @@ package http
 
 import (
 	"context"
-	"crypto/rand"
 	"log"
 	"sync"
 	"time"
 
 	"net/http"
 
-	"github.com/gorilla/csrf"
-	"github.com/gorilla/mux"
 	"github.com/voc/rtmp-auth/public"
 	"github.com/voc/rtmp-auth/store"
 )
@@ -18,7 +15,6 @@ import (
 type ServerConfig struct {
 	Applications []string `toml:"applications"`
 	Prefix       string   `toml:"prefix"`
-	Insecure     bool     `toml:"insecure"`
 }
 
 type Frontend struct {
@@ -27,27 +23,13 @@ type Frontend struct {
 }
 
 func NewFrontend(address string, config ServerConfig, store *store.Store) *Frontend {
-	secret := make([]byte, 32)
-	if _, err := rand.Read(secret); err != nil {
-		log.Fatal("generate CSRF secret", err)
-	}
-
-	router := mux.NewRouter()
-	sub := router.PathPrefix(config.Prefix).Subrouter()
-	sub.Path("/").Methods("GET").HandlerFunc(FormHandler(store, config))
-	sub.Path("/add").Methods("POST").HandlerFunc(AddHandler(store, config))
-	sub.Path("/remove").Methods("POST").HandlerFunc(RemoveHandler(store, config))
-	sub.Path("/block").Methods("POST").HandlerFunc(BlockHandler(store, config))
-	sub.PathPrefix("/public/").Handler(
-		http.StripPrefix(config.Prefix+"/public/", http.FileServer(http.FS(public.FS))))
-	CSRF := csrf.Protect(secret, csrf.Secure(!config.Insecure))
-	csrfHandler := CSRF(router)
-	var handler http.Handler = csrfHandler
-	if config.Insecure {
-		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			csrfHandler.ServeHTTP(w, csrf.PlaintextHTTPRequest(r))
-		})
-	}
+	router := http.NewServeMux()
+	router.HandleFunc("GET "+config.Prefix+"/{$}", FormHandler(store, config))
+	router.HandleFunc("POST "+config.Prefix+"/add", AddHandler(store, config))
+	router.HandleFunc("POST "+config.Prefix+"/remove", RemoveHandler(store, config))
+	router.HandleFunc("POST "+config.Prefix+"/block", BlockHandler(store, config))
+	router.Handle("GET "+config.Prefix+"/public/", http.StripPrefix(config.Prefix+"/public/", http.FileServer(http.FS(public.FS))))
+	handler := http.NewCrossOriginProtection().Handler(router)
 
 	frontend := &Frontend{
 		server: &http.Server{
@@ -84,10 +66,10 @@ type API struct {
 }
 
 func NewAPI(address string, config ServerConfig, store *store.Store) *API {
-	router := mux.NewRouter()
-	router.Path("/publish").Methods("POST").HandlerFunc(PublishHandler(store))
-	router.Path("/unpublish").Methods("POST").HandlerFunc(UnpublishHandler(store))
-	router.Path("/auth").Methods("POST").HandlerFunc(AuthHandler(store))
+	router := http.NewServeMux()
+	router.HandleFunc("POST /publish", PublishHandler(store))
+	router.HandleFunc("POST /unpublish", UnpublishHandler(store))
+	router.HandleFunc("POST /auth", AuthHandler(store))
 
 	api := &API{
 		server: &http.Server{

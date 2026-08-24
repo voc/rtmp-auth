@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gorilla/csrf"
 	"github.com/voc/rtmp-auth/storage"
 	"github.com/voc/rtmp-auth/store"
 )
@@ -157,7 +156,7 @@ func PublishHandler(store *store.Store) handleFunc {
 		log.Printf("Publish %s %s/%s ok\n", id, app, name)
 
 		// SRS needs zero response
-		w.Write([]byte("0"))
+		_, _ = w.Write([]byte("0"))
 	}
 }
 
@@ -193,7 +192,7 @@ func UnpublishHandler(store *store.Store) handleFunc {
 		log.Printf("Unpublish %s/%s ok\n", app, name)
 
 		// SRS needs zero response
-		w.Write([]byte("0"))
+		_, _ = w.Write([]byte("0"))
 	}
 }
 
@@ -210,10 +209,9 @@ func FormHandler(store *store.Store, config ServerConfig) handleFunc {
 		})
 
 		data := TemplateData{
-			State:        state,
-			Config:       config,
-			CsrfTemplate: csrf.TemplateField(r),
-			Errors:       errs,
+			State:  state,
+			Config: config,
+			Errors: errs,
 		}
 		err = templates.ExecuteTemplate(w, "form.html", data)
 		if err != nil {
@@ -259,10 +257,9 @@ func AddHandler(store *store.Store, config ServerConfig) handleFunc {
 			errs = append(errs, err)
 		}
 		data := TemplateData{
-			State:        state,
-			Config:       config,
-			CsrfTemplate: csrf.TemplateField(r),
-			Errors:       errs,
+			State:  state,
+			Config: config,
+			Errors: errs,
 		}
 		err = templates.ExecuteTemplate(w, "form.html", data)
 		if err != nil {
@@ -285,10 +282,9 @@ func RemoveHandler(store *store.Store, config ServerConfig) handleFunc {
 				errs = append(errs, err)
 			}
 			data := TemplateData{
-				State:        state,
-				Config:       config,
-				CsrfTemplate: csrf.TemplateField(r),
-				Errors:       errs,
+				State:  state,
+				Config: config,
+				Errors: errs,
 			}
 			err = templates.ExecuteTemplate(w, "form.html", data)
 			if err != nil {
@@ -333,10 +329,9 @@ func BlockHandler(store *store.Store, config ServerConfig) handleFunc {
 		log.Printf("%ved Stream %v (%v/%v)", action, id, app, name)
 		if len(errs) > 0 {
 			data := TemplateData{
-				State:        state,
-				Config:       config,
-				CsrfTemplate: csrf.TemplateField(r),
-				Errors:       errs,
+				State:  state,
+				Config: config,
+				Errors: errs,
 			}
 			err = templates.ExecuteTemplate(w, "form.html", data)
 			if err != nil {

@@ -72,8 +72,6 @@ vhost __defaultVhost__ {
 ```
 
 ### WebUI
-**Note: You will need to set the -insecure flag when testing over http.**
-
 After reloading your nginx/srs the rtmp publish-requests will be authenticated against the daemon.
 You can visit http://localhost:8082 to add streams.
 
