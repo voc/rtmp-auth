@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -13,6 +14,11 @@ import (
 	"github.com/hashicorp/consul/api/watch"
 	"github.com/voc/rtmp-auth/storage"
 	"google.golang.org/protobuf/proto"
+)
+
+const (
+	consulStartupRetryTimeout  = 30 * time.Second
+	consulStartupRetryInterval = time.Second
 )
 
 type ConsulBackendConfig struct{}
@@ -43,9 +49,16 @@ func NewConsulBackend(config ConsulBackendConfig) (Backend, error) {
 		cache:     &storage.State{},
 	}
 
-	_, err = cb.Read()
-	if err != nil {
-		return nil, fmt.Errorf("read: %w", err)
+	deadline := time.Now().Add(consulStartupRetryTimeout)
+	for attempt := 1; ; attempt++ {
+		if _, err = cb.Read(); err == nil {
+			break
+		}
+		if !time.Now().Before(deadline) {
+			return nil, fmt.Errorf("read: %w", err)
+		}
+		slog.Info("consul backend", "err", err, "attempt", attempt, "retry_interval", consulStartupRetryInterval)
+		time.Sleep(consulStartupRetryInterval)
 	}
 
 	err = cb.watch()
